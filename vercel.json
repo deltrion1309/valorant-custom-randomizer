@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "public",
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/", "destination": "/map/ban", "permanent": false },
+    { "source": "/maps", "destination": "/map/ban", "permanent": false },
+    { "source": "/agents", "destination": "/agent", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/map", "destination": "/index.html" },
+    { "source": "/map/ban", "destination": "/index.html" },
+    { "source": "/agent", "destination": "/index.html" }
+  ]
+}

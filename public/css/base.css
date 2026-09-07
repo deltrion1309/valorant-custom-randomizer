@@ -1,0 +1,647 @@
+/* ==========================================================================
+   VALORANT RANDOMIZER — shared design system
+   Palette + shapes lifted from the in-game HUD / playvalorant.com:
+   dark navy ground, hard 45° corner cuts, 1px slate hairlines, red accents.
+   ========================================================================== */
+
+:root {
+  /* Brand */
+  --navy:        #0f1923;
+  --navy-800:    #0b1219;
+  --navy-700:    #16212c;
+  --navy-600:    #1c2834;
+  --red:         #ff4655;
+  --red-dim:     #b3313c;
+  --white:       #ece8e1;
+  --slate:       #5a6672;
+  --slate-dim:   #38434e;
+  --teal:        #00ffcc;
+
+  /* Derived */
+  --line:        rgba(90, 102, 114, 0.45);
+  --line-strong: rgba(236, 232, 225, 0.22);
+  --ink-soft:    rgba(236, 232, 225, 0.62);
+  --ink-faint:   rgba(236, 232, 225, 0.38);
+
+  /* Type */
+  --font-display: 'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif;
+  --font-cond:    'Oswald', 'Arial Narrow', sans-serif;
+  --font-ui:      'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --nav-h: 62px;
+  --shell: 1440px;
+
+  /* Vertical density. Everything that stacks reads its rhythm from these, so
+     the whole app tightens up together on a short screen instead of each
+     block being tuned by hand. */
+  --pad-y:   clamp(9px, 2.1vh, 24px);
+  --gap-y:   clamp(6px, 1.4vh, 16px);
+  --slot-av: clamp(42px, 6.4vh, 76px);   /* agent avatar edge */
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--navy);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Ambient ground: soft red/teal bloom + fine grid, like the menu backdrop */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1100px 620px at 15% -10%, rgba(255, 70, 85, 0.13), transparent 62%),
+    radial-gradient(900px 620px at 92% 108%, rgba(0, 255, 204, 0.07), transparent 60%),
+    linear-gradient(180deg, #0f1923 0%, #0b1219 100%);
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(90, 102, 114, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 102, 114, 0.055) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(1200px 800px at 50% 30%, #000 20%, transparent 85%);
+}
+
+.shell {
+  position: relative;
+  z-index: 2;
+  width: min(100% - 40px, var(--shell));
+  margin-inline: auto;
+}
+
+/* ---------------------------------------------------- app shell / views -- */
+
+
+/* The shell width lives on the main element, not on the views: inside the
+   fit-to-viewport flex column a `flex: 1` view would override its own width. */
+.app__main {
+  position: relative;
+  z-index: 2;
+  width: min(100% - 40px, var(--shell));
+  margin-inline: auto;
+}
+
+.offline-note { margin: 0 0 10px; }
+
+/*
+ * Fit-to-viewport. On a desktop-shaped screen the whole app lives inside one
+ * viewport with no page scroll: the shell is a flex column, the nav and footer
+ * are fixed height, and whatever is in the middle (the map hero, the ban grid,
+ * the two agent boards) takes exactly the space that is left.
+ *
+ * Below this breakpoint it all falls back to ordinary document flow and
+ * scrolls, which is what a phone wants.
+ */
+@media (min-width: 900px) and (min-height: 620px) {
+  html, body { height: 100%; overflow: hidden; }
+
+  body { display: flex; flex-direction: column; }
+
+  .app__main { flex: 1; min-height: 0; display: flex; }
+
+  .view {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding-top: var(--pad-y);
+  }
+
+  .view__body,
+  .phase {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .site-foot { flex: none; padding: 7px 0 10px; }
+}
+
+/* ---------------------------------------------------------------- type --- */
+
+h1, h2, h3 { margin: 0; font-weight: 400; }
+
+.display {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.92;
+}
+
+.kicker {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.kicker--red { color: var(--red); }
+
+/* --------------------------------------------------------------- shapes -- */
+
+/* 45° corner cut — the single most "Valorant" shape there is */
+.cut-tr { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+.cut-bl { clip-path: polygon(0 0, 100% 0, 100% 100%, 14px 100%, 0 calc(100% - 14px)); }
+.cut-both {
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+
+/* Scanline veil for image panels */
+.scanlines { position: relative; }
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(236, 232, 225, 0.035) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: overlay;
+}
+
+/* Bracket corners, like the in-game selection reticle */
+.brackets { position: relative; }
+.brackets::before,
+.brackets::after {
+  content: '';
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--red);
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.brackets::before { top: 8px;    left: 8px;   border-right: 0; border-bottom: 0; }
+.brackets::after  { bottom: 8px; right: 8px;  border-left: 0;  border-top: 0; }
+
+/* ------------------------------------------------------------------ nav -- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--nav-h);
+  background: rgba(11, 18, 25, 0.86);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 1px solid var(--line);
+}
+
+.nav__inner {
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  gap: 28px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--white);
+  padding-right: 26px;
+  border-right: 1px solid var(--line);
+}
+
+.brand__mark {
+  width: 26px;
+  height: 26px;
+  background: var(--red);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.brand__text {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding-top: 3px;
+}
+.brand__text .brand__slash { color: var(--red); }
+
+.nav__links { display: flex; align-items: stretch; gap: 6px; }
+
+.nav__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 30px;
+  font-family: var(--font-cond);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--ink-soft);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.nav__link:hover { color: var(--white); background: rgba(236, 232, 225, 0.06); }
+
+.nav__link.is-active {
+  color: var(--white);
+  background: rgba(255, 70, 85, 0.13);
+}
+.nav__link.is-active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  background: var(--red);
+}
+
+.nav__spacer { flex: 1; }
+
+/* --------------------------------------------------------------- button -- */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 15px 42px;
+  border: 0;
+  background: transparent;
+  color: var(--white);
+  font-family: var(--font-cond);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  cursor: pointer;
+  overflow: hidden;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  transition: color 0.2s ease, transform 0.12s ease;
+}
+.btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--line-strong);
+  background: rgba(236, 232, 225, 0.04);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+/* red sweep on hover, like the site's CTA */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--red);
+  transform: translateX(-101%);
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.btn:hover::after { transform: translateX(0); }
+.btn > * { position: relative; z-index: 1; }
+.btn:active { transform: translateY(1px); }
+
+.btn--primary { color: var(--navy); }
+.btn--primary::before { background: var(--red); border-color: var(--red); }
+.btn--primary::after { background: var(--white); }
+.btn--primary:hover { color: var(--navy); }
+
+.btn--hero {
+  padding: clamp(11px, 1.9vh, 20px) clamp(40px, 6vw, 78px);
+  font-size: clamp(15px, 2.2vh, 21px);
+  letter-spacing: 0.3em;
+}
+
+.btn:disabled { cursor: not-allowed; opacity: 0.4; }
+.btn:disabled::after { transform: translateX(-101%); }
+
+.btn--ghost { color: var(--ink-soft); font-size: 12px; padding: 10px 20px; letter-spacing: 0.2em; }
+.btn--ghost:hover { color: var(--navy); }
+
+/* A ghost button that sweeps teal instead of red — used for the one action
+   that sets a known-good state rather than editing one. */
+.btn--teal::before { border-color: rgba(0, 255, 204, 0.4); }
+.btn--teal::after  { background: var(--teal); }
+.btn--teal { color: var(--teal); }
+.btn--teal:hover  { color: var(--navy); }
+
+/* Lit-up state: the same box, same padding, same text position — the fill just
+   comes in and the control stops being a control. Used for the live button on
+   the ban screen and for the read-only twin on the randomizer. */
+.btn--teal.is-on { color: var(--navy); pointer-events: none; }
+.btn--teal.is-on::before { border-color: var(--teal); }
+.btn--teal.is-on::after  { transform: translateX(0); }
+
+/* A slow breath so the lit state reads as live rather than just coloured.
+   Only the fill's colour and an INSET glow animate — no transform, no shadow
+   outside the box (the clip-path would eat it anyway), so nothing on the page
+   can be pushed or overlapped. Reduced-motion already stops it globally. */
+.btn--teal.is-on::after { animation: pool-pulse 1.7s ease-in-out infinite alternate; }
+
+@keyframes pool-pulse {
+  from {
+    background: var(--teal);
+    box-shadow: inset 0 0 0 0 rgba(236, 255, 250, 0);
+  }
+  to {
+    background: #7dffe6;
+    box-shadow: inset 0 0 20px 2px rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* ------------------------------------------------------- page chrome ----- */
+/* Shared by /map and /agent: page shell, title row, action deck, spin scrim. */
+
+.page { position: relative; z-index: 2; padding: 34px 0 10px; }
+
+.head, .deck { flex: none; }
+
+/* ------------------------------------------------------------ page head -- */
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: var(--pad-y);
+  flex-wrap: wrap;
+}
+
+.head__actions { display: flex; gap: 9px; flex-wrap: wrap; padding-bottom: 4px; }
+
+.head__title {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 4.6vh, 62px);
+  line-height: 0.86;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.head__title em { font-style: normal; color: var(--red); }
+
+.head__rule {
+  flex: 1;
+  min-width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line), transparent);
+  margin-bottom: 12px;
+}
+
+.counter {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-cond);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 12px;
+  color: var(--ink-faint);
+  padding-bottom: 6px;
+}
+/* Fixed-width, right-aligned number: dropping from two digits to one must not
+   shorten the counter and slide the whole head row across. `2ch` is only the
+   pre-measurement floor — lockCounterWidth() in map.js replaces it with the
+   real width of the widest digit pair once the webfont has loaded. */
+.counter b {
+  display: inline-block;
+  min-width: 2ch;
+  text-align: right;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--white);
+  line-height: 1;
+}
+.counter b.is-low { color: var(--red); }
+
+/*
+ * A fixed-footprint slot in the head. Its children stack in one grid cell, so
+ * the slot is as wide as its widest child and swapping which one is visible
+ * never reflows the row. Hidden with `.is-off` (visibility), never `display`.
+ */
+.head__flag {
+  display: grid;
+  justify-items: end;
+  align-items: center;
+  padding-bottom: 4px;
+}
+.head__flag > * { grid-area: 1 / 1; }
+
+.is-off { visibility: hidden; pointer-events: none; }
+
+/*
+ * Marks the pool as being exactly the competitive rotation. A state chip rather
+ * than words after the count, so "7 / 13" stays a number.
+ */
+.poolbadge {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 4px;
+  padding: 5px 11px 5px 9px;
+  border: 1px solid rgba(0, 255, 204, 0.42);
+  background: rgba(0, 255, 204, 0.09);
+  color: var(--teal);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: default;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+.head__flag .poolbadge:not(.is-off) { animation: badge-in 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* compact variant, for over the hero art */
+.poolbadge--sm {
+  gap: 7px;
+  padding: 4px 9px 4px 7px;
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  backdrop-filter: blur(6px);
+  text-shadow: none;
+}
+.poolbadge--sm .poolbadge__tick { width: 5px; height: 5px; }
+
+.poolbadge__tick {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  background: var(--teal);
+  transform: rotate(45deg);
+  box-shadow: 0 0 9px var(--teal);
+}
+
+@keyframes badge-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(6, 10, 14, 0.78);
+  backdrop-filter: blur(9px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+body.is-spinning .scrim { opacity: 1; }
+
+/* .page owns a stacking context, so it has to clear the scrim as a whole;
+   the head/pool dim themselves with opacity + blur below. */
+body.is-spinning .page { z-index: 31; }
+body.is-spinning .head { opacity: 0.25; filter: blur(2px); }
+
+/* ---------------------------------------------------------------- deck --- */
+
+.deck {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: var(--pad-y) 0 2px;
+  position: relative;
+  z-index: 3;
+  flex-wrap: wrap;
+}
+body.is-spinning .deck { z-index: 35; }
+
+.deck__hint {
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  min-height: 16px;
+}
+.deck__hint.is-warn { color: var(--red); }
+
+.deck__minor {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+/* -------------------------------------------------------------- loading -- */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 52vh;
+  text-align: center;
+}
+
+.spinner {
+  width: 46px;
+  height: 46px;
+  border: 2px solid rgba(236, 232, 225, 0.14);
+  border-top-color: var(--red);
+  border-right-color: var(--red);
+  animation: spin 0.85s cubic-bezier(0.6, 0.1, 0.4, 0.9) infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.state__msg {
+  font-family: var(--font-cond);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.state__sub { font-size: 13px; color: var(--ink-faint); max-width: 46ch; }
+
+[hidden] { display: none !important; }
+
+/* ------------------------------------------------------------- a11y/misc - */
+
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+
+.site-foot {
+  position: relative;
+  z-index: 2;
+  padding: 16px 0 20px;
+  text-align: center;
+  font-size: 9.5px;
+  line-height: 1.5;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(236, 232, 225, 0.26);
+}
+.site-foot p {
+  margin: 0 auto;
+  max-width: 1120px;
+  padding-inline: 20px;
+}
+.site-foot p + p { margin-top: 3px; color: rgba(236, 232, 225, 0.2); }
+.site-foot a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.site-foot a:hover { color: var(--red); }
+
+@media (max-width: 700px) {
+  .nav__inner { gap: 12px; }
+  .nav__link { padding: 0 16px; font-size: 13px; letter-spacing: 0.14em; }
+  .brand { padding-right: 14px; gap: 9px; }
+}
+
+@media (max-width: 560px) {
+  .nav__inner { gap: 8px; }
+  .nav__link { padding: 0 13px; font-size: 12px; letter-spacing: 0.1em; }
+  .brand { padding-right: 11px; gap: 8px; }
+  .brand__mark { width: 19px; height: 19px; }
+  .brand__text { font-size: 17px; letter-spacing: 0.06em; }
+  .brand__text .brand__word,
+  .brand__text .brand__slash { display: none; }
+  .btn--hero { padding: 15px 24px; font-size: 15px; letter-spacing: 0.18em; }
+}
+
+/* -------------------------------------------------- view transitions ----- */
+/* Switching views swaps two sections that are already in the DOM, so the
+   browser can cross-fade it. The nav and footer are named so they stay put
+   instead of fading with everything else. */
+.nav { view-transition-name: nav; }
+.site-foot { view-transition-name: foot; }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 240ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -1,0 +1,445 @@
+/* ==========================================================================
+   MAP RANDOMIZER
+   ========================================================================== */
+
+
+/* ---------------------------------------------------------------- stage -- */
+
+.stage-wrap { position: relative; z-index: 3; flex: 1; min-height: 0; }
+
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 21 / 9;
+  min-height: 240px;
+  max-height: 100%;
+  overflow: hidden;
+  background: var(--navy-800);
+  border: 1px solid var(--line);
+  clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 26px 100%, 0 calc(100% - 26px));
+  transform-origin: center;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease;
+  will-change: transform;
+}
+
+/* Every swap is a cross-fade, idle and shuffle alike. `--fade` is set from JS
+   to roughly 80% of the current frame gap, so the blend always finishes just
+   before the next image arrives — fast frames get a fast dissolve rather than
+   a hard cut. */
+.stage { --fade: 850ms; }
+
+.stage__layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity var(--fade) linear;
+  transform: scale(1.045);
+}
+.stage__layer.is-on { opacity: 1; }
+
+/* Slow ken-burns drift.
+
+   It runs on BOTH layers, always, from first paint — never bound to `.is-on`.
+   That matters: an animation attached to a class is torn off the moment the
+   class goes, so the outgoing layer used to snap back to its un-zoomed
+   transform while it was still visible mid-cross-fade, and the incoming layer
+   restarted the zoom from 0%. Both read as a stutter on every swap.
+
+   Running it on both layers keeps them on one clock: at any instant the two
+   layers share an identical transform, so a cross-fade is a pure opacity blend
+   and the zoom carries straight through the switch. */
+.stage__layer {
+  animation: drift 16s ease-in-out infinite alternate;
+}
+
+/* During a shuffle the drift is PAUSED, not removed — pausing freezes the
+   transform where it is, so nothing jumps on the way in or out. */
+.stage.is-shuffling .stage__layer { animation-play-state: paused; }
+@keyframes drift {
+  from { transform: scale(1.045) translate3d(0, 0, 0); }
+  to   { transform: scale(1.085) translate3d(1.1%, -0.7%, 0); }
+}
+
+.stage__veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(11,18,25,0.72) 0%, rgba(11,18,25,0.06) 34%, rgba(11,18,25,0.86) 100%),
+    linear-gradient(90deg, rgba(11,18,25,0.78) 0%, transparent 46%);
+}
+
+.stage__scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(236,232,225,0.045) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+}
+
+.stage__grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* corner reticle */
+.stage__corner {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(236, 232, 225, 0.5);
+  pointer-events: none;
+  transition: border-color 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+.stage__corner--tl { top: 14px; left: 14px;  border-right: 0; border-bottom: 0; }
+.stage__corner--br { bottom: 14px; right: 14px; border-left: 0; border-top: 0; }
+
+/* map name block */
+.stage__meta {
+  position: absolute;
+  left: clamp(20px, 3vw, 42px);
+  bottom: clamp(18px, 3.2vh, 34px);
+  right: clamp(20px, 3vw, 42px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+/* Two stacked lines sharing one grid cell, cross-faded like the images, so the
+   map name dissolves between states instead of snapping. */
+.stage__name {
+  display: grid;
+  justify-items: start;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 11vh, 116px);
+  line-height: 0.84;
+  text-transform: uppercase;
+  letter-spacing: 0.012em;
+}
+
+.stage__nameline {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--fade) linear;
+  text-shadow: 0 6px 34px rgba(0, 0, 0, 0.7);
+}
+.stage__nameline.is-on { opacity: 1; }
+
+/* Status + the ranked flag. Nothing sits to the right of this row, so the flag
+   appearing or going can't push anything. It is hidden outright during a
+   shuffle rather than blinking on and off every frame. */
+.stage__statusrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.stage__statusrow .stage__status { margin-bottom: 0; }
+
+/* Status label. Deliberately box-free: a chip with a border would visibly
+   resize whenever the text changes, which reads as jitter over the hero. */
+.stage__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  transition: color 0.3s ease;
+}
+.stage__status::before {
+  content: '';
+  width: 18px;
+  height: 2px;
+  background: var(--red);
+  flex: none;
+}
+.stage__status.is-live { color: var(--red); }
+
+.tag {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  color: var(--white);
+  background: rgba(11, 18, 25, 0.6);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(6px);
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+}
+.tag--red { border-color: rgba(255, 70, 85, 0.6); color: var(--red); }
+
+/* progress hairline that fills during a spin */
+.stage__bar {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: rgba(236, 232, 225, 0.1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.stage__bar i {
+  display: block;
+  will-change: width;
+  height: 100%;
+  width: 0%;
+  background: var(--red);
+  box-shadow: 0 0 14px var(--red);
+}
+
+/* ------------------------------------------------------- spin / reveal --- */
+
+body.is-spinning .stage-wrap { z-index: 35; }
+body.is-spinning .stage {
+  transform: scale(1.035);
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 70, 85, 0.35);
+}
+body.is-spinning .stage__corner { border-color: var(--red); }
+body.is-spinning .stage__bar { opacity: 1; }
+body.is-spinning .stage__name { opacity: 0.86; }
+
+/* landed: flash + ring + pulse + a one-shot chromatic glitch */
+.stage.is-landed {
+  animation: land-pulse 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: none;   /* the animation owns transform for its whole run */
+}
+@keyframes land-pulse {
+  0%   { transform: scale(1.035); }
+  34%  { transform: scale(1.052); }
+  100% { transform: scale(1); }
+}
+
+.flash {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(115deg, rgba(255,70,85,0.85), rgba(0,255,204,0.5) 55%, transparent 78%);
+  mix-blend-mode: screen;
+}
+.stage.is-landed .flash { animation: flash-out 0.55s ease-out; }
+@keyframes flash-out {
+  0%   { opacity: 0.7; transform: translateX(-5%); }
+  100% { opacity: 0;   transform: translateX(3%); }
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  border: 2px solid var(--red);
+  opacity: 0;
+}
+.stage.is-landed .ring { animation: ring-out 0.85s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes ring-out {
+  0%   { opacity: 1; transform: scale(0.955); box-shadow: 0 0 0 0 rgba(255,70,85,0.55) inset; }
+  100% { opacity: 0; transform: scale(1.02); }
+}
+
+.stage.is-landed .stage__nameline.is-on { animation: glitch-in 0.42s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes glitch-in {
+  0%   { transform: translateX(-7px); text-shadow: 4px 0 var(--red), -4px 0 var(--teal); }
+  45%  { transform: translateX(2px);  text-shadow: -2px 0 var(--red), 2px 0 var(--teal); }
+  100% { transform: translateX(0);    text-shadow: 0 6px 34px rgba(0,0,0,0.7); }
+}
+
+
+/* ------------------------------------------------------------ ban board -- */
+
+/*
+ * Height-driven grid: two rows filling whatever the phase column leaves, with
+ * the cards sized off that row height and their width following the aspect
+ * ratio. The board fits the screen rather than the screen fitting the board.
+ * Below the fit breakpoint it falls back to an ordinary wrapping grid.
+ */
+.ban-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: clamp(7px, 1.2vh, 14px);
+  align-content: start;
+}
+
+@media (min-width: 900px) and (min-height: 620px) {
+  .ban-grid {
+    grid-template-columns: none;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: auto;
+    justify-content: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .ban-grid .card { height: 100%; width: auto; }
+}
+
+.card {
+  position: relative;
+  aspect-ratio: 3 / 4.4;
+  border: 1px solid var(--line);
+  background: var(--navy-700) center/cover no-repeat;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  color: var(--white);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, filter 0.3s ease;
+}
+.card:hover { transform: translateY(-5px); border-color: var(--line-strong); }
+
+.card__img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: filter 0.35s ease, opacity 0.35s ease, transform 0.6s ease;
+}
+.card:hover .card__img { transform: scale(1.06); }
+
+.card__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11,18,25,0.15) 0%, rgba(11,18,25,0.1) 40%, rgba(11,18,25,0.92) 100%);
+}
+
+.card__name {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  font-family: var(--font-display);
+  font-size: clamp(17px, 2.6vh, 25px);
+  line-height: 0.95;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: left;
+  text-shadow: 0 3px 14px rgba(0,0,0,0.8);
+}
+
+.card__sub {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+
+/* active strip on the left edge */
+.card__edge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--teal);
+  box-shadow: 0 0 12px rgba(0, 255, 204, 0.6);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card__x {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  pointer-events: none;
+}
+.card__x svg { width: 58%; height: 58%; stroke: var(--red); stroke-width: 6; opacity: 0.92; }
+
+/* Ranked-rotation chip, pinned to a corner so it never interacts with the
+   name, the ban ribbon or the X. */
+.card__ranked {
+  position: absolute;
+  right: 11px;
+  bottom: 14px;
+  z-index: 2;
+  padding: 3px 7px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(6, 24, 22, 0.8);
+  border: 1px solid rgba(0, 255, 204, 0.42);
+  color: var(--teal);
+  font-family: var(--font-ui);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+  clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+  transition: opacity 0.3s ease;
+}
+
+/* keep the name clear of the chip, but only on the cards that have one */
+.card:has(.card__ranked) .card__name { padding-right: 58px; }
+.card__ranked i {
+  width: 5px;
+  height: 5px;
+  background: var(--teal);
+  transform: rotate(45deg);
+}
+/* still readable on a banned card, but it shouldn't fight the red */
+.card.is-banned .card__ranked { opacity: 0.35; }
+
+.card__banner {
+  position: absolute;
+  top: 26px;
+  left: -34px;
+  right: -34px;
+  padding: 5px 0;
+  background: var(--red);
+  color: var(--navy);
+  font-family: var(--font-cond);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-align: center;
+  transform: rotate(-9deg) scale(0.9);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+/* banned state */
+.card.is-banned { border-color: rgba(255, 70, 85, 0.5); }
+.card.is-banned .card__img { filter: grayscale(1) brightness(0.42); }
+.card.is-banned .card__name { color: rgba(236, 232, 225, 0.45); }
+.card.is-banned .card__edge { background: var(--red); box-shadow: 0 0 12px rgba(255, 70, 85, 0.6); }
+.card.is-banned .card__x { opacity: 1; }
+.card.is-banned .card__banner { opacity: 1; transform: rotate(-9deg) scale(1); }
+
+/* ------------------------------------------------------------ responsive - */
+
+@media (max-width: 860px) {
+  .stage { aspect-ratio: 16 / 10; min-height: 0; max-height: none; }
+  .stage__meta { left: 22px; right: 22px; bottom: 22px; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .btn--hero { padding: 17px 44px; font-size: 17px; }
+  .ban-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; }
+  .card__name { font-size: 20px; }
+}
+
+@media (max-width: 620px) {
+  .stage__name { font-size: clamp(38px, 13vw, 64px); }
+}

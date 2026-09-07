@@ -1,0 +1,16 @@
+{
+  "name": "valorant-randomizer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Map + agent randomizer for Valorant custom games. Zero dependencies.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node --test --test-reporter=spec && node tools/distribution-report.js",
+    "report": "node tools/distribution-report.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

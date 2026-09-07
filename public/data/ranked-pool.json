@@ -1,0 +1,34 @@
+{
+  "label": "V26 Act 5",
+  "patch": "13.04",
+  "updated": "2026-09-07",
+  "maps": [
+    "Abyss",
+    "Ascent",
+    "Haven",
+    "Lotus",
+    "Split",
+    "Summit",
+    "Sunset"
+  ],
+
+  "_why_this_file_exists": [
+    "Riot publishes no public API for the competitive map rotation. valorant-api.com's",
+    "/v1/maps carries no in-rotation flag (premierBackgroundImage is set on every standard",
+    "map, so it can't stand in for one), and /v1/gamemodes/queues describes the Competitive",
+    "queue as having a 'limited map pool' without ever listing it. So this list is curated.",
+    "",
+    "The app fetches this file once on load and matches names case-insensitively against the",
+    "live map list; names that don't match any map are ignored with a console warning, so a",
+    "stale entry degrades quietly rather than breaking the button.",
+    "",
+    "The rotation changes roughly every act. To update: edit `maps`, bump `label`, `patch`",
+    "and `updated`. The label is shown in the UI (the RANKED POOL badge's tooltip and the",
+    "button's tooltip), so a list that has gone stale is visible rather than silently wrong."
+  ],
+  "_sources": [
+    "https://dotesports.com/valorant/news/valorants-competitive-map-pool-rotation-explained",
+    "https://www.thespike.gg/valorant/maps/map-pool",
+    "https://www.hotspawn.com/valorant/news/valorant-map-pool"
+  ]
+}

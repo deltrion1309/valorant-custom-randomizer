@@ -1,0 +1,116 @@
+{
+  "status": 200,
+  "_note": "Last-resort snapshot, used only when valorant-api.com is unreachable AND no live response has been cached in this browser yet. It may be missing newer maps \u2014 the app caches the real response on every successful load.",
+  "data": [
+    {
+      "uuid": "7eaecc1b-4337-bbf6-6ab9-04b8f06b3319",
+      "displayName": "Ascent",
+      "tacticalDescription": "A/B Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6ab9-04b8f06b3319/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6ab9-04b8f06b3319/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6ab9-04b8f06b3319/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6ab9-04b8f06b3319/listviewicontall.png"
+    },
+    {
+      "uuid": "2c9d57ec-4431-9c5e-2939-8f9ef6dd5cba",
+      "displayName": "Bind",
+      "tacticalDescription": "A/B Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/2c9d57ec-4431-9c5e-2939-8f9ef6dd5cba/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/2c9d57ec-4431-9c5e-2939-8f9ef6dd5cba/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/2c9d57ec-4431-9c5e-2939-8f9ef6dd5cba/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/2c9d57ec-4431-9c5e-2939-8f9ef6dd5cba/listviewicontall.png"
+    },
+    {
+      "uuid": "2fb9a4fd-47b8-4e7d-a969-74b4046ebd53",
+      "displayName": "Breeze",
+      "tacticalDescription": "A/B Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/2fb9a4fd-47b8-4e7d-a969-74b4046ebd53/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/2fb9a4fd-47b8-4e7d-a969-74b4046ebd53/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/2fb9a4fd-47b8-4e7d-a969-74b4046ebd53/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/2fb9a4fd-47b8-4e7d-a969-74b4046ebd53/listviewicontall.png"
+    },
+    {
+      "uuid": "b529448b-4d60-346e-e89e-00a4c527a405",
+      "displayName": "Fracture",
+      "tacticalDescription": "A/B Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/b529448b-4d60-346e-e89e-00a4c527a405/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/b529448b-4d60-346e-e89e-00a4c527a405/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/b529448b-4d60-346e-e89e-00a4c527a405/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/b529448b-4d60-346e-e89e-00a4c527a405/listviewicontall.png"
+    },
+    {
+      "uuid": "e2ad5c54-4114-a870-9641-8ea21279579a",
+      "displayName": "Icebox",
+      "tacticalDescription": "A/B Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/e2ad5c54-4114-a870-9641-8ea21279579a/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/e2ad5c54-4114-a870-9641-8ea21279579a/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/e2ad5c54-4114-a870-9641-8ea21279579a/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/e2ad5c54-4114-a870-9641-8ea21279579a/listviewicontall.png"
+    },
+    {
+      "uuid": "2fe4ed3a-450a-948b-6d6b-e89a78e680a9",
+      "displayName": "Lotus",
+      "tacticalDescription": "A/B/C Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/2fe4ed3a-450a-948b-6d6b-e89a78e680a9/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/2fe4ed3a-450a-948b-6d6b-e89a78e680a9/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/2fe4ed3a-450a-948b-6d6b-e89a78e680a9/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/2fe4ed3a-450a-948b-6d6b-e89a78e680a9/listviewicontall.png"
+    },
+    {
+      "uuid": "fd267378-4d1d-484f-ff52-77821ed10dc2",
+      "displayName": "Pearl",
+      "tacticalDescription": "A/B Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/fd267378-4d1d-484f-ff52-77821ed10dc2/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/fd267378-4d1d-484f-ff52-77821ed10dc2/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/fd267378-4d1d-484f-ff52-77821ed10dc2/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/fd267378-4d1d-484f-ff52-77821ed10dc2/listviewicontall.png"
+    },
+    {
+      "uuid": "d960549e-485c-e861-8d71-aa9d1aed12a2",
+      "displayName": "Split",
+      "tacticalDescription": "A/B Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/d960549e-485c-e861-8d71-aa9d1aed12a2/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/d960549e-485c-e861-8d71-aa9d1aed12a2/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/d960549e-485c-e861-8d71-aa9d1aed12a2/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/d960549e-485c-e861-8d71-aa9d1aed12a2/listviewicontall.png"
+    },
+    {
+      "uuid": "92584fbe-486a-b1b2-9faa-39b0f486b498",
+      "displayName": "Sunset",
+      "tacticalDescription": "A/B Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/92584fbe-486a-b1b2-9faa-39b0f486b498/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/92584fbe-486a-b1b2-9faa-39b0f486b498/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/92584fbe-486a-b1b2-9faa-39b0f486b498/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/92584fbe-486a-b1b2-9faa-39b0f486b498/listviewicontall.png"
+    },
+    {
+      "uuid": "224b0a95-48b9-f703-1bd8-67aca101a61f",
+      "displayName": "Abyss",
+      "tacticalDescription": "A/B Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/224b0a95-48b9-f703-1bd8-67aca101a61f/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/224b0a95-48b9-f703-1bd8-67aca101a61f/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/224b0a95-48b9-f703-1bd8-67aca101a61f/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/224b0a95-48b9-f703-1bd8-67aca101a61f/listviewicontall.png"
+    },
+    {
+      "uuid": "756da597-416b-c0f2-f47b-afbdf28670bc",
+      "displayName": "Summit",
+      "tacticalDescription": "A/B Sites",
+      "coordinates": null,
+      "splash": "https://media.valorant-api.com/maps/756da597-416b-c0f2-f47b-afbdf28670bc/splash.png",
+      "displayIcon": "https://media.valorant-api.com/maps/756da597-416b-c0f2-f47b-afbdf28670bc/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/756da597-416b-c0f2-f47b-afbdf28670bc/listviewicon.png",
+      "listViewIconTall": "https://media.valorant-api.com/maps/756da597-416b-c0f2-f47b-afbdf28670bc/listviewicontall.png"
+    }
+  ]
+}

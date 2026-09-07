@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custom Randomizer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230f1923'/%3E%3Cpath d='M6 7 L26 7 L16 27 Z' fill='%23ff4655'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/map.css">
+<link rel="stylesheet" href="/css/agent.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="shell nav__inner">
+    <a class="brand" href="/map/ban">
+      <span class="brand__mark" aria-hidden="true"></span>
+      <span class="brand__text"><span class="brand__word">Custom</span><span class="brand__slash">/</span>Randomizer</span>
+    </a>
+    <nav class="nav__links">
+      <a class="nav__link" href="/map/ban" data-view="map">Maps</a>
+      <a class="nav__link" href="/agent" data-view="agent">Agents</a>
+    </nav>
+    <div class="nav__spacer"></div>
+  </div>
+</header>
+
+<div class="scrim" aria-hidden="true"></div>
+
+<main class="app__main">
+
+  <!-- ==================================================== MAP VIEW ======= -->
+  <section class="view view--map" id="viewMap" hidden>
+
+    <section id="mapLoading" class="state">
+      <div class="spinner" aria-hidden="true"></div>
+      <p class="state__msg">Pulling map data…</p>
+    </section>
+
+    <section id="mapError" class="state" hidden>
+      <p class="kicker kicker--red">Connection Failed</p>
+      <p class="state__msg">Could not load the map pool</p>
+      <p class="state__sub" id="mapErrorMsg"></p>
+      <button class="btn" id="mapRetry"><span>Retry</span></button>
+    </section>
+
+    <div id="mapApp" class="view__body" hidden>
+
+      <!-- ---------------------------------------------- stage 1 · bans --- -->
+      <section class="phase" id="phaseBan" hidden>
+        <div class="head">
+          <h1 class="head__title">Ban <em>Phase</em></h1>
+          <div class="head__rule"></div>
+          <!-- One element in both states: a button while it has something to
+               do, the same box lit up and inert once the pool IS the rotation. -->
+          <div class="head__flag" id="flagBan" hidden>
+            <button class="btn btn--ghost btn--teal" id="rankedPool">
+              <span>Ranked Pool</span>
+            </button>
+          </div>
+          <div class="head__actions">
+            <button class="btn btn--ghost" id="selectAll"><span>Activate All</span></button>
+            <button class="btn btn--ghost" id="banAll"><span>Ban All</span></button>
+          </div>
+          <div class="counter">
+            <b id="countActive">0</b> <span>/ <span id="countTotal">0</span> active</span>
+          </div>
+        </div>
+
+        <p id="mapOffline" class="kicker kicker--red offline-note" hidden></p>
+
+        <div class="ban-grid" id="grid"></div>
+
+        <div class="deck">
+          <button class="btn btn--primary btn--hero" id="banContinue">
+            <span id="banContinueText">Skip Banning</span>
+          </button>
+          <p class="deck__hint" id="banHint"></p>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------- stage 2 · randomizer --- -->
+      <section class="phase" id="phaseRoll" hidden>
+        <div class="head">
+          <h1 class="head__title">Map <em>Select</em></h1>
+          <div class="head__rule"></div>
+          <!-- Same box, same lit state as the ban screen — read-only here. -->
+          <div class="head__flag" id="flagRoll" hidden>
+            <span class="btn btn--ghost btn--teal is-on is-off" id="poolBadgeRoll">
+              <span>Ranked Pool</span>
+            </span>
+          </div>
+          <div class="head__actions">
+            <button class="btn btn--ghost" id="editBans"><span>Edit Bans</span></button>
+          </div>
+          <div class="counter">
+            <b id="countActive2">0</b> <span>/ <span id="countTotal2">0</span> active</span>
+          </div>
+        </div>
+
+        <div class="stage-wrap">
+          <div class="stage scanlines" id="stage">
+            <div class="stage__layer" id="layerA"></div>
+            <div class="stage__layer" id="layerB"></div>
+            <div class="stage__veil"></div>
+            <div class="stage__grain"></div>
+            <div class="stage__scan"></div>
+            <div class="flash"></div>
+            <div class="ring"></div>
+            <span class="stage__corner stage__corner--tl"></span>
+            <span class="stage__corner stage__corner--br"></span>
+
+            <div class="stage__meta">
+              <div>
+                <div class="stage__statusrow">
+                  <span class="stage__status" id="mapStatus">Standby</span>
+                  <span class="poolbadge poolbadge--sm" id="stageRanked" hidden>
+                    <i class="poolbadge__tick" aria-hidden="true"></i>Ranked
+                  </span>
+                </div>
+                <h2 class="stage__name" id="mapName">
+                  <span class="stage__nameline is-on" id="nameA">—</span>
+                  <span class="stage__nameline" id="nameB"></span>
+                </h2>
+              </div>
+            </div>
+
+            <div class="stage__bar"><i id="spinBar"></i></div>
+          </div>
+        </div>
+
+        <div class="deck">
+          <button class="btn btn--primary btn--hero" id="spinBtn">
+            <span id="spinBtnText">Randomize</span>
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </section>
+
+  <!-- ================================================== AGENT VIEW ======= -->
+  <section class="view view--agent" id="viewAgent" hidden>
+
+    <section id="agentLoading" class="state">
+      <div class="spinner" aria-hidden="true"></div>
+      <p class="state__msg">Pulling agent roster…</p>
+    </section>
+
+    <section id="agentError" class="state" hidden>
+      <p class="kicker kicker--red">Connection Failed</p>
+      <p class="state__msg">Could not load the agent roster</p>
+      <p class="state__sub" id="agentErrorMsg"></p>
+      <button class="btn" id="agentRetry"><span>Retry</span></button>
+    </section>
+
+    <div id="agentApp" class="view__body" hidden>
+
+      <div class="head">
+        <h1 class="head__title">Agent <em>Select</em></h1>
+        <div class="head__rule"></div>
+        <div class="counter">
+          <b id="countAgents">0</b> <span>agents in roster</span>
+        </div>
+      </div>
+
+      <p id="agentOffline" class="kicker kicker--red offline-note" hidden></p>
+
+      <div class="teams">
+        <section class="team team--a" id="teamA">
+          <header class="team__head">
+            <span class="team__tick"></span>
+            <h2 class="team__name">Defenders</h2>
+            <span class="team__locks"><b data-locks>0</b>/5 locked</span>
+          </header>
+          <div class="team__slots" data-slots></div>
+        </section>
+
+        <section class="team team--b" id="teamB">
+          <header class="team__head">
+            <span class="team__tick"></span>
+            <h2 class="team__name">Attackers</h2>
+            <span class="team__locks"><b data-locks>0</b>/5 locked</span>
+          </header>
+          <div class="team__slots" data-slots></div>
+        </section>
+      </div>
+
+      <div class="deck">
+        <button class="btn btn--primary btn--hero" id="rollBtn">
+          <span id="rollBtnText">Randomize</span>
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-foot">
+  <p>Map and agent artwork and names are the property of Riot Games, served at runtime by
+    <a href="https://valorant-api.com" target="_blank" rel="noopener noreferrer">valorant-api.com</a>,
+    an unofficial community API that is not affiliated with or endorsed by Riot Games.</p>
+  <p>Custom/Randomizer isn't endorsed by Riot Games and doesn't reflect the views or opinions of
+    Riot Games or anyone officially involved in producing or managing Riot Games properties.
+    Riot Games and all associated properties are trademarks or registered trademarks of
+    Riot Games, Inc.</p>
+</footer>
+
+<!-- Shared agent picker. Lives outside the views on purpose: the slot's
+     clip-path would clip any popover rendered inside it. -->
+<div class="agentpanel" id="agentPanel" role="dialog" aria-label="Select an agent" hidden>
+  <div class="agentpanel__head">
+    <input class="agentpanel__search" id="agentSearch" type="text" autocomplete="off"
+           placeholder="Search agents" aria-label="Search agents">
+    <button class="agentpanel__close" id="agentClose" type="button" aria-label="Close">&times;</button>
+  </div>
+  <div class="agentpanel__body" id="agentBody"></div>
+  <p class="agentpanel__empty" id="agentEmpty" hidden>No agent by that name</p>
+</div>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
