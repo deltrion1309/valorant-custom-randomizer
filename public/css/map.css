@@ -280,14 +280,31 @@ body.is-spinning .stage__name { opacity: 0.86; }
 @media (min-width: 900px) and (min-height: 620px) {
   .ban-grid {
     grid-template-columns: none;
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, auto);
     grid-auto-flow: column;
     grid-auto-columns: auto;
     justify-content: center;
-    overflow-x: auto;
-    overflow-y: hidden;
+    align-content: center;
+    overflow: auto;
   }
-  .ban-grid .card { height: 100%; width: auto; }
+  /*
+   * Height-driven, but CAPPED. Filling the row height outright breaks on a
+   * tall/ultrawide screen: at 1440px tall the two rows hand each card ~545px,
+   * whose 3:4.4 width is ~370px, and seven of those are far wider than the
+   * shell — so the cards ran into each other and their corner chips landed on
+   * the neighbouring names. Taking the smaller of "half the free height" and a
+   * fixed ceiling keeps the row inside the shell at every aspect ratio.
+   */
+  .ban-grid .card {
+    height: min(calc((100vh - 415px) / 2), 300px);
+    width: auto;
+  }
+}
+
+/* Ultrawide has the room for a bigger board — raise the ceiling with the shell
+   so the grid fills the screen instead of floating in it. */
+@media (min-width: 2400px) and (min-height: 900px) {
+  .ban-grid .card { height: min(calc((100vh - 415px) / 2), 420px); }
 }
 
 .card {

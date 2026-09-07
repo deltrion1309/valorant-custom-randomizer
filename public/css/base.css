@@ -111,6 +111,11 @@ body::after {
  * Below this breakpoint it all falls back to ordinary document flow and
  * scrolls, which is what a phone wants.
  */
+/* Ultrawide: let the shell use some of the extra width instead of leaving the
+   ban board to overflow a 1440px cap. */
+@media (min-width: 1800px) { :root { --shell: 1760px; } }
+@media (min-width: 2400px) { :root { --shell: 2200px; } }
+
 @media (min-width: 900px) and (min-height: 620px) {
   html, body { height: 100%; overflow: hidden; }
 
