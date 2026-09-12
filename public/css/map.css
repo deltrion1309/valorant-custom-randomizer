@@ -296,7 +296,12 @@ body.is-spinning .stage__name { opacity: 0.86; }
    * fixed ceiling keeps the row inside the shell at every aspect ratio.
    */
   .ban-grid .card {
-    height: min(calc((100vh - 415px) / 2), 300px);
+    /* 442px is everything around the grid: nav, head row, deck, footer. It is
+       measured, not derived — so adding or removing anything in the header or
+       the footer means re-measuring it. The symptom of a stale value is the
+       grid scrolling internally on a short viewport. Last checked after the
+       Impressum/Datenschutz links were added to the footer (+27px). */
+    height: min(calc((100vh - 442px) / 2), 300px);
     width: auto;
   }
 }
@@ -304,7 +309,7 @@ body.is-spinning .stage__name { opacity: 0.86; }
 /* Ultrawide has the room for a bigger board — raise the ceiling with the shell
    so the grid fills the screen instead of floating in it. */
 @media (min-width: 2400px) and (min-height: 900px) {
-  .ban-grid .card { height: min(calc((100vh - 415px) / 2), 420px); }
+  .ban-grid .card { height: min(calc((100vh - 442px) / 2), 420px); }
 }
 
 .card {

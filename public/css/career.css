@@ -1,0 +1,596 @@
+/* ==========================================================================
+   CAREER VIEW — the game log, the Riot ID input, and the "game logged" toast.
+
+   Like the legal pages this is long-form: it gets its own scroll container
+   rather than fighting the fit-to-one-screen layout the randomizers use.
+   ========================================================================== */
+
+.view--career { min-height: 0; }
+
+.career__scroll {
+  width: min(100% - 40px, var(--shell));
+  margin-inline: auto;
+  padding-bottom: 48px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+@media (min-width: 900px) and (min-height: 620px) {
+  .career__scroll { flex: 1; min-height: 0; }
+}
+
+/* --------------------------------------------------------------- riot id - */
+
+.riotid { margin: 18px 0 26px; }
+
+.riotid__label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--slate);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* Name / # / Tag as one continuous field, the way the in-game Add Friend box
+   reads. The # is a static label, not an input: it cannot be deleted or typed
+   into, so the two halves are never ambiguous. */
+.riotid__box {
+  display: inline-flex;
+  align-items: stretch;
+  background: rgba(236, 232, 225, 0.05);
+  border: 1px solid rgba(236, 232, 225, 0.18);
+  transition: border-color 0.16s ease;
+}
+
+.riotid__box:focus-within { border-color: var(--red); }
+
+.riotid__box input {
+  background: none;
+  border: 0;
+  color: var(--white);
+  font-family: 'Barlow', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px 12px;
+}
+
+.riotid__box input:focus { outline: none; }
+.riotid__box input::placeholder { color: var(--slate); font-weight: 400; }
+
+.riotid__name { width: 190px; }
+.riotid__tag  { width: 86px; }
+
+.riotid__hash {
+  display: grid;
+  place-items: center;
+  padding: 0 2px;
+  color: var(--slate);
+  font-family: 'Barlow', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.riotid__region {
+  align-self: stretch;
+  padding: 0 10px;
+  border: 0;
+  border-left: 1px solid rgba(236, 232, 225, 0.18);
+  background: rgba(236, 232, 225, 0.05);
+  color: var(--slate);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+
+.riotid__region:focus { outline: none; color: var(--white); }
+.riotid__region option { background: #14212d; color: var(--white); }
+
+.riotid__note {
+  margin-top: 8px;
+  max-width: 46ch;
+  color: var(--slate);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------------ feed - */
+
+.feed { display: grid; gap: 14px; }
+
+.feed__empty {
+  padding: 56px 20px;
+  border: 1px dashed rgba(236, 232, 225, 0.16);
+  color: var(--slate);
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.gcard {
+  border: 1px solid rgba(236, 232, 225, 0.12);
+  border-left: 3px solid var(--slate);
+  background: rgba(236, 232, 225, 0.035);
+  padding: 16px 18px 14px;
+}
+
+.gcard.is-pending { border-left-color: var(--red); }
+.gcard.is-matched { border-left-color: var(--teal); }
+
+.gcard__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid rgba(236, 232, 225, 0.1);
+}
+
+.gcard__map {
+  width: 54px;
+  height: 34px;
+  flex: none;
+  background: #0b131b center / cover no-repeat;
+}
+
+.gcard__id { flex: 1; min-width: 0; }
+
+.gcard__name {
+  font-family: 'Bebas Neue', Oswald, 'Arial Narrow', sans-serif;
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.gcard__when {
+  margin-top: 2px;
+  color: var(--slate);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.gpill {
+  flex: none;
+  padding: 4px 11px;
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.gpill--pending { color: var(--red);  border: 1px solid rgba(255, 70, 85, 0.5); }
+.gpill--matched { color: var(--navy); background: var(--teal); }
+
+/* ----------------------------------------------------------- team boards - */
+
+.gcard__teams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 26px;
+  padding-top: 13px;
+}
+
+@media (max-width: 700px) {
+  .gcard__teams { grid-template-columns: minmax(0, 1fr); }
+}
+
+.gteam__name {
+  margin-bottom: 7px;
+  color: var(--slate);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.gteam--a .gteam__name { color: #4fd6ff; }
+.gteam--b .gteam__name { color: var(--red); }
+
+.gteam__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+
+.gslot {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.gslot__icon {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  background: #0b131b center / cover no-repeat;
+}
+
+.gslot__icon--blank { background: rgba(236, 232, 225, 0.08); }
+
+.gslot__agent {
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.gslot__player {
+  margin-left: auto;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--slate);
+  font-size: 12px;
+}
+
+/* --------------------------------------------------------- match result - */
+
+.gmatch { margin-top: 14px; padding-top: 13px; border-top: 1px solid rgba(236, 232, 225, 0.1); }
+
+.gmatch__score {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Bebas Neue', Oswald, sans-serif;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.gmatch__score i { color: var(--slate); font-style: normal; }
+
+.gmatch__score b.is-win  { color: var(--teal); }
+.gmatch__score b.is-loss { color: var(--slate); }
+
+.gmatch__src {
+  margin-top: 4px;
+  text-align: center;
+  color: var(--slate);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.gmatch__sides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 26px;
+  margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+  .gmatch__sides { grid-template-columns: minmax(0, 1fr); }
+}
+
+.gstatwrap { min-width: 0; overflow-x: auto; }
+
+.gstat { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+.gstat th {
+  padding-bottom: 6px;
+  color: var(--slate);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+/* A heading has to sit over its own numbers. Left-aligned labels above
+   right-aligned figures read as two unrelated columns. */
+.gstat th.gstat__num,
+.gform__table th.gstat__num { text-align: right; }
+
+/* The letter-spacing hangs a gap off the right edge of every uppercase label,
+   which puts the heading a fraction further right than the digits under it. */
+.gstat th.gstat__num,
+.gform__table th.gstat__num { padding-right: 0; text-indent: 0.16em; }
+
+.gstat td { padding: 5px 0; border-top: 1px solid rgba(236, 232, 225, 0.07); }
+.gstat__num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gstat__name { font-weight: 600; }
+
+.gstat__agent {
+  display: block;
+  color: var(--slate);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* The tag is a badge, not part of the name — and it keeps its own #. */
+.riottag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: rgba(236, 232, 225, 0.12);
+  color: var(--slate);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.gstat__rank { display: flex; align-items: center; gap: 7px; color: var(--slate); }
+.gstat__rankicon { width: 22px; height: 22px; object-fit: contain; }
+.gstat__rankicon--none { display: inline-block; background: rgba(236, 232, 225, 0.1); }
+
+/* ------------------------------------------------------------- controls - */
+
+.gcard__note:empty { display: none; }
+
+.gcard__note {
+  margin-top: 12px;
+  padding: 8px 11px;
+  border-left: 2px solid var(--red);
+  background: rgba(255, 70, 85, 0.08);
+  color: #ffb3ba;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.gcard__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 13px;
+}
+
+.btn--quiet { color: var(--slate); }
+.btn--quiet:hover { color: var(--white); }
+
+/* Buttons flanking the hero button on the randomizer decks. */
+.deck--row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.deck--row .deck__side { flex: none; }
+
+/* ------------------------------------------------------------------ toast */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  max-width: min(92vw, 520px);
+  padding: 13px 14px 13px 16px;
+  background: #14212d;
+  border: 1px solid rgba(0, 255, 204, 0.45);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+  transform: translate(-50%, 14px);
+  opacity: 0;
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast.is-in { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { transition: none; transform: translate(-50%, 0); }
+}
+
+.toast__tick {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  background: var(--teal);
+  transform: rotate(45deg);
+}
+
+.toast__body { display: grid; min-width: 0; }
+
+.toast__title {
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+
+.toast__text {
+  color: var(--white);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toast__cta {
+  flex: none;
+  margin-left: 4px;
+  padding: 8px 13px;
+  background: var(--teal);
+  color: var(--navy);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.toast__cta:hover { background: #7dffe6; }
+
+.toast__close {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: 0;
+  color: var(--slate);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.toast__close:hover { color: var(--white); }
+
+
+/* ===================================================== manual entry form ===
+   The form IS the results table, with editable cells — same two columns, same
+   headings, same rows. Anything that made it look like a different screen has
+   been deleted rather than restyled.
+   ========================================================================== */
+
+.gform {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(236, 232, 225, 0.1);
+}
+
+.gmatch__score--edit { gap: 8px; }
+
+.gform__in {
+  padding: 5px 7px;
+  background: rgba(236, 232, 225, 0.05);
+  border: 1px solid rgba(236, 232, 225, 0.16);
+  color: var(--white);
+  font-family: 'Barlow', system-ui, sans-serif;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gform__in:focus { outline: none; border-color: var(--teal); }
+.gform__in::placeholder { color: rgba(236, 232, 225, 0.28); }
+
+/* Spinners are wider than the digits they hold and unusable at this size. */
+.gform__in[type='number']::-webkit-outer-spin-button,
+.gform__in[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.gform__in[type='number'] { -moz-appearance: textfield; appearance: textfield; }
+
+.gform__in--score {
+  width: 60px;
+  padding: 6px;
+  text-align: center;
+  font-family: 'Bebas Neue', Oswald, sans-serif;
+  font-size: 28px;
+  line-height: 1;
+}
+
+/* Name and tag, sized for what goes in them rather than for the column. */
+.gform__id { display: flex; gap: 5px; margin-top: 2px; }
+.gform__in--name { width: 100%; min-width: 0; max-width: 130px; font-weight: 600; }
+.gform__in--tag  { width: 58px; flex: none; }
+
+.gform__in--n { width: 54px; text-align: right; }
+
+.gform__kda {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.gform__kda i { color: var(--slate); font-style: normal; }
+.gform__in--k { width: 40px; text-align: center; padding-inline: 3px; }
+
+/* An editable row is taller than a read-only one; let the cells breathe so the
+   two tables still read as the same table. */
+.gstat--edit td { padding: 6px 0; }
+.gstat--edit td.gstat__num { padding-left: 10px; }
+
+.gform__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ---------------------------------------------------------- rank control - */
+
+/* Reads as a filled cell, opens the shared popover. Deliberately shaped like
+   the agent picker on the board: emblem, label, caret. */
+.rankpick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 138px;
+  padding: 5px 8px 5px 5px;
+  border: 1px solid rgba(236, 232, 225, 0.16);
+  background: rgba(11, 18, 25, 0.9);
+  color: var(--white);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.rankpick:hover { border-color: rgba(236, 232, 225, 0.34); background: rgba(20, 32, 44, 0.95); }
+.rankpick[aria-expanded='true'] { border-color: var(--teal); }
+
+.rankpick__thumb {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  object-fit: contain;
+}
+
+.rankpick__thumb--none {
+  background: rgba(236, 232, 225, 0.08);
+  border: 1px solid rgba(236, 232, 225, 0.16);
+}
+
+.rankpick__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* ---------------------------------------------------------- rank popover - */
+
+/* Borrows .agentpanel wholesale so the two pickers are the same object. */
+.agentpanel--rank { width: 312px; }
+.agentpanel--rank::before { background: var(--teal); }
+
+.agentpanel__title {
+  flex: 1;
+  color: var(--ink-soft);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* Three across, because a division is exactly three tiers — the grid itself
+   says "Iron 1, 2, 3" before you have read a single label. */
+.atile-grid--rank { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+.atile--rank { padding-top: 4px; }
+
+.atile__img--rank {
+  aspect-ratio: 1;
+  background-color: transparent;
+  background-size: 74%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.atile--rank .atile__name { letter-spacing: 0.08em; }
+
+.atile--rank.is-current { border-color: var(--teal); }
+.atile--rank.is-current .atile__name { color: var(--teal); }

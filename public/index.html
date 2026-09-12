@@ -3,14 +3,74 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Custom Randomizer</title>
+<title>Custom/Randomizer — Valorant Map &amp; Agent Randomizer</title>
+<meta name="description" content="Free Valorant custom game randomizer. Ban maps, roll a random map from what is left, and deal a random agent to all ten players across both teams. No sign-up, no download.">
+<link rel="canonical" href="https://vcr.schwer-eingeschraenkt.com/map/ban">
+<meta name="theme-color" content="#0f1923">
+<meta name="robots" content="index, follow, max-image-preview:large">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Custom/Randomizer">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://vcr.schwer-eingeschraenkt.com/map/ban">
+<meta property="og:title" content="Custom/Randomizer — Valorant Map &amp; Agent Randomizer">
+<meta property="og:description" content="Ban maps, roll a random map, and deal a random agent to all ten players. A free randomizer for Valorant custom games.">
+<meta property="og:image" content="https://vcr.schwer-eingeschraenkt.com/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Custom/Randomizer — a map and agent randomizer for Valorant custom games">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Custom/Randomizer — Valorant Map &amp; Agent Randomizer">
+<meta name="twitter:description" content="Ban maps, roll a random map, and deal a random agent to all ten players. A free randomizer for Valorant custom games.">
+<meta name="twitter:image" content="https://vcr.schwer-eingeschraenkt.com/og-card.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230f1923'/%3E%3Cpath d='M6 7 L26 7 L16 27 Z' fill='%23ff4655'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Fonts are served from this origin, not Google's. See css/fonts.css. -->
+<link rel="preload" href="/fonts/bebas-neue-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/oswald-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/map.css">
 <link rel="stylesheet" href="/css/agent.css">
+<link rel="stylesheet" href="/css/career.css">
+<link rel="stylesheet" href="/css/legal.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://vcr.schwer-eingeschraenkt.com/#website",
+      "url": "https://vcr.schwer-eingeschraenkt.com/",
+      "name": "Custom/Randomizer",
+      "description": "A map and agent randomizer for Valorant custom games.",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://vcr.schwer-eingeschraenkt.com/#app",
+      "name": "Custom/Randomizer",
+      "url": "https://vcr.schwer-eingeschraenkt.com/map/ban",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Any modern web browser",
+      "browserRequirements": "Requires JavaScript.",
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+      "description": "Ban maps, roll a random map from the maps left active, and deal a random agent to all ten players across both teams. Built for Valorant custom games.",
+      "featureList": [
+        "Map banning with a competitive-rotation filter",
+        "Weighted-free, uniformly random map draw",
+        "Random agent for all ten players, no duplicates",
+        "Role-balanced team compositions",
+        "Per-slot agent locking and manual picks"
+      ],
+      "isPartOf": { "@id": "https://vcr.schwer-eingeschraenkt.com/#website" }
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
@@ -23,6 +83,7 @@
     <nav class="nav__links">
       <a class="nav__link" href="/map/ban" data-view="map">Maps</a>
       <a class="nav__link" href="/agent" data-view="agent">Agents</a>
+      <a class="nav__link" href="/career" data-view="career">Career</a>
     </nav>
     <div class="nav__spacer"></div>
   </div>
@@ -132,6 +193,8 @@
           </div>
         </div>
 
+        <!-- No lock button: a rolled map IS the locked map, and a reroll
+             replaces it. Locking is never a thing the user has to remember. -->
         <div class="deck">
           <button class="btn btn--primary btn--hero" id="spinBtn">
             <span id="spinBtnText">Randomize</span>
@@ -162,6 +225,13 @@
       <div class="head">
         <h1 class="head__title">Agent <em>Select</em></h1>
         <div class="head__rule"></div>
+        <!-- Same fixed-footprint slot as the map view's pool control: the box
+             never changes size, so lighting it up moves nothing. -->
+        <div class="head__flag" id="flagRandom">
+          <button class="btn btn--ghost btn--teal" id="fullRandom" aria-pressed="false">
+            <span>Full Random</span>
+          </button>
+        </div>
         <div class="counter">
           <b id="countAgents">0</b> <span>agents in roster</span>
         </div>
@@ -189,26 +259,110 @@
         </section>
       </div>
 
-      <div class="deck">
+      <div class="deck deck--row">
+        <button class="btn btn--ghost deck__side" id="lockAll"><span>Lock All</span></button>
         <button class="btn btn--primary btn--hero" id="rollBtn">
           <span id="rollBtnText">Randomize</span>
         </button>
+        <button class="btn btn--ghost deck__side" id="unlockAll"><span>Unlock All</span></button>
       </div>
 
     </div>
   </section>
 
+  <!-- ================================================= CAREER VIEW ======= -->
+  <section class="view view--career" id="viewCareer" hidden>
+    <div class="career__scroll">
+
+      <div class="head">
+        <h1 class="head__title">Match <em>History</em></h1>
+        <div class="head__rule"></div>
+        <div class="counter">
+          <b id="countGames">0</b> <span>games logged</span>
+        </div>
+      </div>
+
+      <!-- Split Name / # / Tag, the way the in-game Add Friend box does it.
+           The # is furniture, not an input: it can never be deleted or typed
+           into, so the two halves stay unambiguous. -->
+      <div class="riotid">
+        <label class="riotid__label" for="riotName">Your Riot ID</label>
+        <div class="riotid__box">
+          <input class="riotid__name" id="riotName" type="text" maxlength="16"
+                 placeholder="Name" autocomplete="off" spellcheck="false"
+                 aria-label="Riot ID name">
+          <span class="riotid__hash" aria-hidden="true">#</span>
+          <input class="riotid__tag" id="riotTag" type="text" maxlength="5"
+                 placeholder="Tag" autocomplete="off" spellcheck="false"
+                 aria-label="Riot ID tag">
+          <select class="riotid__region" id="riotRegion" aria-label="Account region">
+            <option value="eu">EU</option>
+            <option value="na">NA</option>
+            <option value="ap">AP</option>
+            <option value="kr">KR</option>
+            <option value="br">BR</option>
+            <option value="latam">LATAM</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="feed" id="careerFeed"></div>
+
+      <p class="feed__empty" id="careerEmpty" hidden>
+        No games logged yet. Lock in a map, then lock all ten agents — the game
+        shows up here automatically.
+      </p>
+
+    </div>
+  </section>
+
+  <!-- Impressum und Datenschutzerklärung. Rendered by js/legal.js from
+       data/imprint.json, so the operator's details are data, not code. -->
+  <section class="view view--legal" id="viewLegal" hidden>
+    <div class="legal__scroll" id="legalBody"></div>
+  </section>
+
 </main>
 
+<!-- Confirmation that a game was logged. Outside the views so it survives a
+     view switch, and aria-live so it is announced rather than only seen. -->
+<div class="toast" id="toast" role="status" aria-live="polite" hidden>
+  <span class="toast__tick" aria-hidden="true"></span>
+  <div class="toast__body">
+    <b class="toast__title">Game logged</b>
+    <span class="toast__text" id="toastText"></span>
+  </div>
+  <a class="toast__cta" href="/career">Open Career</a>
+  <button class="toast__close" id="toastClose" aria-label="Dismiss">&times;</button>
+</div>
+
 <footer class="site-foot">
-  <p>Map and agent artwork and names are the property of Riot Games, served at runtime by
-    <a href="https://valorant-api.com" target="_blank" rel="noopener noreferrer">valorant-api.com</a>,
-    an unofficial community API that is not affiliated with or endorsed by Riot Games.</p>
+  <p>Map, agent and rank artwork and names are the property of Riot Games, served at runtime by
+    <a href="https://valorant-api.com" target="_blank" rel="noopener noreferrer">valorant-api.com</a>.
+    Match results, when you finalize a game, come from the
+    <a href="https://docs.henrikdev.xyz" target="_blank" rel="noopener noreferrer">HenrikDev API</a>.
+    Both are unofficial community projects, neither affiliated with nor endorsed by Riot Games.</p>
   <p>Custom/Randomizer isn't endorsed by Riot Games and doesn't reflect the views or opinions of
     Riot Games or anyone officially involved in producing or managing Riot Games properties.
     Riot Games and all associated properties are trademarks or registered trademarks of
     Riot Games, Inc.</p>
+  <p class="site-foot__links">
+    <a href="/imprint">Impressum <span class="site-foot__alt">· Legal Notice</span></a>
+    <a href="/privacy">Datenschutz <span class="site-foot__alt">· Privacy</span></a>
+  </p>
 </footer>
+
+<!-- Rank picker for the manual result form. Out here for the same reason as
+     the agent picker below: the career feed is its own scroll container, and a
+     popover rendered inside it would be clipped by the overflow. -->
+<div class="agentpanel agentpanel--rank" id="rankPanel" role="dialog"
+     aria-label="Select a rank" hidden>
+  <div class="agentpanel__head">
+    <span class="agentpanel__title">Rank</span>
+    <button class="agentpanel__close" id="rankClose" type="button" aria-label="Close">&times;</button>
+  </div>
+  <div class="agentpanel__body" id="rankBody"></div>
+</div>
 
 <!-- Shared agent picker. Lives outside the views on purpose: the slot's
      clip-path would clip any popover rendered inside it. -->

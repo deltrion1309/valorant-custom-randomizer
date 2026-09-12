@@ -10,12 +10,61 @@
      /map/ban     map view, ban stage
      /map         map view, randomizer stage
      /agent       agent view
+     /career      career view, the log of games this browser has set up
+     /imprint     legal view, Impressum
+     /privacy     legal view, Datenschutzerklärung
    ========================================================================== */
 
+const SITE = 'https://vcr.schwer-eingeschraenkt.com';
+
+/**
+ * Each route carries the metadata a crawler and a link preview need. The whole
+ * site is one document, so without this every route would share index.html's
+ * title and description — four URLs that look identical to a search engine.
+ */
 const ROUTES = [
-  { path: '/map/ban', view: 'map',   sub: 'ban'  },
-  { path: '/map',     view: 'map',   sub: 'roll' },
-  { path: '/agent',   view: 'agent', sub: null   },
+  {
+    path: '/map/ban',
+    view: 'map',
+    sub: 'ban',
+    title: 'Map Ban — Custom/Randomizer',
+    desc: 'Ban the maps you do not want to play, or filter straight down to the current competitive rotation, before rolling a random Valorant map.',
+  },
+  {
+    path: '/map',
+    view: 'map',
+    sub: 'roll',
+    title: 'Map Select — Custom/Randomizer',
+    desc: 'Roll a uniformly random Valorant map from the maps left active after banning.',
+  },
+  {
+    path: '/agent',
+    view: 'agent',
+    sub: null,
+    title: 'Agent Select — Custom/Randomizer',
+    desc: 'Deal a random Valorant agent to all ten players across both teams, with no duplicates, optional role balancing and per-slot locking.',
+  },
+  {
+    path: '/career',
+    view: 'career',
+    sub: null,
+    title: 'Career — Custom/Randomizer',
+    desc: 'Every custom game this browser has set up: the map, both team compositions, and the result once the match is finalized.',
+  },
+  {
+    path: '/imprint',
+    view: 'legal',
+    sub: 'imprint',
+    title: 'Impressum · Legal Notice — Custom/Randomizer',
+    desc: 'Anbieterkennzeichnung nach § 5 DDG. Provider identification under German law, in German and English.',
+  },
+  {
+    path: '/privacy',
+    view: 'legal',
+    sub: 'privacy',
+    title: 'Datenschutz · Privacy — Custom/Randomizer',
+    desc: 'Informationen nach Art. 13 DSGVO, in Deutsch und Englisch. Keine Cookies, kein Tracking, keine Werbung.',
+  },
 ];
 
 const HOME = '/map/ban';
@@ -23,11 +72,15 @@ const HOME = '/map/ban';
 const els = {
   map: document.getElementById('viewMap'),
   agent: document.getElementById('viewAgent'),
+  career: document.getElementById('viewCareer'),
+  legal: document.getElementById('viewLegal'),
 };
 
 const loaders = {
   map: () => import('./map.js'),
   agent: () => import('./agent.js'),
+  career: () => import('./career.js'),
+  legal: () => import('./legal.js'),
 };
 
 const modules = {};      // view name → module namespace, once initialised
@@ -53,9 +106,27 @@ function setNav(view) {
   document.querySelectorAll('.nav__link').forEach((a) => {
     a.classList.toggle('is-active', a.dataset.view === view);
   });
-  document.title = view === 'agent'
-    ? 'Agent Select — Custom Randomizer'
-    : 'Map Select — Custom Randomizer';
+}
+
+/** Keep <head> honest about which route is on screen. Crawlers that execute JS
+ *  read the updated tags; the ones that do not still get index.html's defaults,
+ *  which describe the site as a whole. */
+function setMeta(route) {
+  document.title = route.title;
+  const url = SITE + route.path;
+
+  const set = (selector, attr, value) => {
+    const node = document.head.querySelector(selector);
+    if (node) node.setAttribute(attr, value);
+  };
+
+  set('link[rel="canonical"]', 'href', url);
+  set('meta[name="description"]', 'content', route.desc);
+  set('meta[property="og:url"]', 'content', url);
+  set('meta[property="og:title"]', 'content', route.title);
+  set('meta[property="og:description"]', 'content', route.desc);
+  set('meta[name="twitter:title"]', 'content', route.title);
+  set('meta[name="twitter:description"]', 'content', route.desc);
 }
 
 async function ensure(view) {
@@ -78,6 +149,7 @@ async function render(route) {
   const prev = current;
   current = route;
   setNav(route.view);
+  setMeta(route);
 
   // Loading a view for the first time can take a moment (data + image
   // preload); reveal its own loading state immediately so the switch still
@@ -107,11 +179,51 @@ export function navigate(path, { replace = false } = {}) {
   if (!route) return navigate(HOME, { replace: true });
   if (current && current.path === route.path) return undefined;
 
+  if (route.view === 'career') hideToast();
+
   if (replace) history.replaceState({}, '', route.path);
   else history.pushState({}, '', route.path);
 
   return render(route);
 }
+
+/* ------------------------------------------------------------------ toast - */
+
+/**
+ * A game is logged from session.js, which can fire while the user is looking at
+ * either randomizer — so the confirmation lives out here in the shell rather
+ * than in a view. It carries the only navigation that matters at that moment.
+ */
+const toast = {
+  node: document.getElementById('toast'),
+  text: document.getElementById('toastText'),
+  close: document.getElementById('toastClose'),
+  timer: null,
+};
+
+function showToast(game) {
+  if (!toast.node) return;
+  const map = game?.map?.name || 'Custom game';
+  toast.text.textContent = `${map} · 10 agents locked in`;
+  toast.node.hidden = false;
+  // Restart the entrance animation even if the toast is already up.
+  toast.node.classList.remove('is-in');
+  void toast.node.offsetWidth;
+  toast.node.classList.add('is-in');
+
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(hideToast, 9000);
+}
+
+function hideToast() {
+  clearTimeout(toast.timer);
+  if (!toast.node) return;
+  toast.node.classList.remove('is-in');
+  toast.node.hidden = true;
+}
+
+toast.close?.addEventListener('click', hideToast);
+window.addEventListener('vr:gamecreated', (e) => showToast(e.detail?.game));
 
 /* ------------------------------------------------------------- listeners - */
 

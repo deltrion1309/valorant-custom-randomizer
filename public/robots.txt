@@ -1,0 +1,12 @@
+# Custom/Randomizer — https://vcr.schwer-eingeschraenkt.com
+User-agent: *
+Allow: /
+
+# Legacy stubs from before the app became a single page; they only redirect.
+Disallow: /map.html
+Disallow: /agent.html
+
+# Raw data the app fetches. Nothing to index, and no reason to crawl it.
+Disallow: /data/
+
+Sitemap: https://vcr.schwer-eingeschraenkt.com/sitemap.xml

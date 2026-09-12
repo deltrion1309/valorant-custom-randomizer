@@ -345,6 +345,20 @@ h1, h2, h3 { margin: 0; font-weight: 400; }
 .btn--ghost { color: var(--ink-soft); font-size: 12px; padding: 10px 20px; letter-spacing: 0.2em; }
 .btn--ghost:hover { color: var(--navy); }
 
+/* Destructive, and it should look available rather than switched off. Red
+   outline and red label at rest; the standard sweep then fills it on hover, so
+   it behaves like every other button while reading as the dangerous one. */
+.btn--danger { color: var(--red); font-size: 12px; padding: 10px 20px; letter-spacing: 0.2em; }
+.btn--danger::before { border-color: rgba(255, 70, 85, 0.65); background: rgba(255, 70, 85, 0.07); }
+.btn--danger:hover { color: var(--white); }
+.btn--danger:hover::before { border-color: var(--red); }
+
+/* A flat 0.4 opacity leaves a ghost button reading as an empty box — the thin
+   outline survives, the faint label does not. Dim the label explicitly instead,
+   so a disabled control still says what it is. */
+.btn--ghost:disabled { opacity: 1; color: rgba(236, 232, 225, 0.3); }
+.btn--ghost:disabled::before { border-color: rgba(236, 232, 225, 0.1); }
+
 /* A ghost button that sweeps teal instead of red — used for the one action
    that sets a known-good state rather than editing one. */
 .btn--teal::before { border-color: rgba(0, 255, 204, 0.4); }
@@ -353,26 +367,92 @@ h1, h2, h3 { margin: 0; font-weight: 400; }
 .btn--teal:hover  { color: var(--navy); }
 
 /* Lit-up state: the same box, same padding, same text position — the fill just
-   comes in and the control stops being a control. Used for the live button on
-   the ban screen and for the read-only twin on the randomizer. */
-.btn--teal.is-on { color: var(--navy); pointer-events: none; }
+   comes in. Used for the live three-state button on the ban screen and for the
+   read-only twin on the randomizer.
+
+   The button stays clickable in every state (Off → Ranked → Non-Ranked →
+   Ranked), so only the twin — which is a <span>, never a control — goes inert. */
+.btn--teal.is-on { color: var(--navy); }
 .btn--teal.is-on::before { border-color: var(--teal); }
 .btn--teal.is-on::after  { transform: translateX(0); }
+span.btn--teal.is-on { pointer-events: none; }
 
-/* A slow breath so the lit state reads as live rather than just coloured.
-   Only the fill's colour and an INSET glow animate — no transform, no shadow
+/* Inverted pool: the same lit box, label struck through, so "Ranked Pool" reads
+   as its own negation. Text and box are untouched, so the footprint is identical
+   to the other two states and the head row cannot shift between them. */
+.btn--teal.is-inverse > span {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0;
+}
+
+/* The lit state, alive.
+   ---------------------------------------------------------------------------
+   The first version breathed the whole fill between two greens, which at a
+   glance just read as "the colour is wrong". Valorant's own UI doesn't pulse
+   by dimming things — it wipes them: a hard-edged band of light crosses a
+   panel, then the panel sits still. So that is what this does.
+
+   Three layers, all inside the existing ::after fill, so no extra element and
+   no change to the button's box:
+     1. a narrow diagonal sheen that crosses fast and then rests off-screen,
+     2. a fine scanline texture, fixed, which keeps the flat teal from looking
+        like plain paint,
+     3. the teal itself.
+   Only `background-position` animates — no transform, no layout, no shadow
    outside the box (the clip-path would eat it anyway), so nothing on the page
-   can be pushed or overlapped. Reduced-motion already stops it globally. */
-.btn--teal.is-on::after { animation: pool-pulse 1.7s ease-in-out infinite alternate; }
+   can move because of it.
 
-@keyframes pool-pulse {
-  from {
-    background: var(--teal);
-    box-shadow: inset 0 0 0 0 rgba(236, 255, 250, 0);
+   The sweep occupies about a fifth of the cycle. The pause is the point: a
+   continuous shimmer reads as a loading state, an occasional wipe reads as
+   powered-on. */
+.btn--teal.is-on::after {
+  background:
+    linear-gradient(104deg,
+      rgba(255, 255, 255, 0) 38%,
+      rgba(255, 255, 255, 0.34) 46%,
+      rgba(255, 255, 255, 0.85) 50%,
+      rgba(255, 255, 255, 0.34) 54%,
+      rgba(255, 255, 255, 0) 62%),
+    repeating-linear-gradient(0deg,
+      rgba(4, 32, 28, 0.13) 0 1px,
+      rgba(4, 32, 28, 0) 1px 3px),
+    var(--teal);
+  background-size: 240% 100%, 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  background-position: 150% 0, 0 0, 0 0;
+  animation: pool-sweep 3.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Both the sheen and the edge live on ::after, because ::after is the top
+   opaque layer — ::before sits underneath it and is invisible while lit, so
+   anything animated there would simply never be seen. The glow is therefore an
+   INSET shadow: `overflow: hidden` plus the clip-path would eat an outer one. */
+@keyframes pool-sweep {
+  0% {
+    background-position: 150% 0, 0 0, 0 0;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
   }
-  to {
-    background: #7dffe6;
-    box-shadow: inset 0 0 20px 2px rgba(255, 255, 255, 0.6);
+  10% {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+      inset 0 0 16px -3px rgba(255, 255, 255, 0.75);
+  }
+  22% {
+    background-position: -60% 0, 0 0, 0 0;
+  }
+  34%, 100% {
+    background-position: -60% 0, 0 0, 0 0;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  }
+}
+
+/* Motion is decoration here; the colour already carries the state. */
+@media (prefers-reduced-motion: reduce) {
+  .btn--teal.is-on::after {
+    animation: none;
+    background-position: 150% 0, 0 0, 0 0;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
   }
 }
 
@@ -650,3 +730,38 @@ body.is-spinning .deck { z-index: 35; }
     transition-duration: 0.001ms !important;
   }
 }
+
+
+/* ==========================================================================
+   Scrollbars.
+
+   The default chrome scrollbar is a light-grey slab that looks pasted onto a
+   dark UI. These are the same thin, angular, palette-matched bars everywhere
+   they can appear — the career feed, the legal pages, the agent picker, the
+   ban grid — rather than styled one by one and forgotten somewhere.
+
+   `scrollbar-gutter: stable` on the scrolling containers keeps the bar from
+   changing the content width when it appears, which is the whole no-layout-
+   shift rule applied to one more thing.
+   ========================================================================== */
+
+* {
+  scrollbar-width: thin;                                  /* Firefox */
+  scrollbar-color: rgba(236, 232, 225, 0.22) transparent;
+}
+
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+
+*::-webkit-scrollbar-track { background: transparent; }
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(236, 232, 225, 0.18);
+  border: 3px solid transparent;        /* inset, via background-clip */
+  background-clip: content-box;
+  transition: background-color 0.18s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover { background: rgba(236, 232, 225, 0.38); background-clip: content-box; }
+*::-webkit-scrollbar-thumb:active { background: var(--red); background-clip: content-box; }
+
+*::-webkit-scrollbar-corner { background: transparent; }

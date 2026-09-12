@@ -3,13 +3,51 @@
   "outputDirectory": "public",
   "trailingSlash": false,
   "redirects": [
-    { "source": "/", "destination": "/map/ban", "permanent": false },
-    { "source": "/maps", "destination": "/map/ban", "permanent": false },
-    { "source": "/agents", "destination": "/agent", "permanent": false }
+    {
+      "source": "/",
+      "destination": "/map/ban",
+      "permanent": false
+    },
+    {
+      "source": "/maps",
+      "destination": "/map/ban",
+      "permanent": false
+    },
+    {
+      "source": "/agents",
+      "destination": "/agent",
+      "permanent": false
+    }
   ],
   "rewrites": [
-    { "source": "/map", "destination": "/index.html" },
-    { "source": "/map/ban", "destination": "/index.html" },
-    { "source": "/agent", "destination": "/index.html" }
-  ]
+    {
+      "source": "/map",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/map/ban",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/agent",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/career",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/imprint",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/match.js": {
+      "maxDuration": 15
+    }
+  }
 }

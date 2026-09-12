@@ -1,0 +1,30 @@
+{
+  "_README": [
+    "Impressum data for /imprint, and the controller named in /privacy.",
+    "",
+    "German law (§5 DDG) requires a natural person running a publicly available",
+    "digital service to state: full name, a ladungsfähige Anschrift (a real street",
+    "address where post can legally be served — NOT a P.O. box, NOT a packing",
+    "station), and a way to be contacted quickly and electronically (email).",
+    "",
+    "Fill the fields below in and redeploy. While any of name, street, city or",
+    "email is empty the pages render a loud unfinished-notice instead of a legally",
+    "useless half-imprint, so you cannot ship this by accident.",
+    "",
+    "phone and responsible are optional:",
+    "  phone        not required by §5 DDG as long as email is present.",
+    "  responsible  only needed under §18 (2) MStV if you ever publish",
+    "               journalistic-editorial content here. A randomizer is not that,",
+    "               so leave it empty."
+  ],
+
+  "name": "Fabian Zöllner",
+  "street": "Ludwigsplatz 2",
+  "postalCode": "53859",
+  "city": "Niederkassel",
+  "country": "Deutschland",
+  "email": "zoellner.fabian@web.de",
+  "phone": "015736229288",
+  "responsible": "Fabian Zöllner",
+  "updated": "2026-09-11"
+}

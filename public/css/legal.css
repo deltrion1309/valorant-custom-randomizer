@@ -1,0 +1,194 @@
+/* ==========================================================================
+   Impressum and Datenschutzerklärung.
+
+   These are the only pages on the site that are long-form reading, so they get
+   their own scroll container rather than fighting the fit-to-one-screen layout:
+   on desktop `html, body` are `overflow: hidden`, and a document that quietly
+   clipped its own last paragraph would be worse than useless here.
+   ========================================================================== */
+
+.view--legal { min-height: 0; }
+
+.legal__scroll {
+  width: min(100% - 40px, 820px);
+  margin-inline: auto;
+  padding: 28px 0 56px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: var(--white);
+  font-family: 'Barlow', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.68;
+  scrollbar-gutter: stable;
+}
+
+@media (min-width: 900px) and (min-height: 620px) {
+  .legal__scroll { flex: 1; min-height: 0; }
+}
+
+/* Sits above the title, right-aligned, so it is the first thing a reader who
+   needs the other language finds — and out of the way for everyone else. */
+.legal__lang {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.legal__lang .btn { padding: 7px 16px; font-size: 11px; }
+
+.legal__title {
+  font-family: 'Bebas Neue', Oswald, 'Arial Narrow', sans-serif;
+  font-size: clamp(38px, 5vw, 56px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.legal__lead {
+  margin-top: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(236, 232, 225, 0.14);
+  color: var(--slate);
+  font-size: 14px;
+}
+
+.legal__lead span[lang='en'] { display: block; margin-top: 2px; opacity: 0.85; }
+
+.legal__block { margin-top: 32px; }
+
+.legal__block h2 {
+  margin-bottom: 10px;
+  color: var(--white);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.legal__block h2::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  margin-right: 10px;
+  vertical-align: 0.28em;
+  background: var(--red);
+}
+
+.legal__block p + p { margin-top: 11px; }
+
+.legal__block ul { margin: 10px 0 0 2px; padding: 0; list-style: none; }
+
+.legal__block li {
+  position: relative;
+  padding-left: 20px;
+  margin-top: 6px;
+}
+
+.legal__block li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  background: var(--teal);
+  transform: rotate(45deg);
+}
+
+.legal__scroll a { color: var(--red); text-underline-offset: 3px; }
+.legal__scroll a:hover { color: var(--white); }
+
+/* The operator block: set apart, because it is the part that legally matters. */
+.legal__address {
+  margin-top: 4px;
+  padding: 14px 18px;
+  border-left: 3px solid var(--red);
+  background: rgba(236, 232, 225, 0.04);
+  font-style: normal;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.legal__contact {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  margin-top: 14px;
+}
+
+.legal__contact dt {
+  color: var(--slate);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  align-self: center;
+}
+
+.legal__contact dd { margin: 0; }
+
+/* Unmistakable while the required data is still missing. */
+.legal__todo {
+  margin-top: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--red);
+  background: rgba(255, 70, 85, 0.1);
+}
+
+.legal__todo b {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--red);
+  font-family: 'Oswald', system-ui, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.legal__todo code,
+.legal__block code {
+  padding: 1px 5px;
+  background: rgba(236, 232, 225, 0.1);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 0.92em;
+}
+
+.legal__foot {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(236, 232, 225, 0.14);
+  color: var(--slate);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.legal__foot a { margin-inline: 2px; }
+
+/* Footer link row, present on every view. */
+.site-foot__links {
+  margin-top: 10px;
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+}
+
+.site-foot__links a {
+  color: var(--slate);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.site-foot__links a:hover { color: var(--white); }
+
+/* The German label is the one the law expects a German visitor to look for;
+   the English half is for everyone else. Dimmed, so the pair reads as one link. */
+.site-foot__alt { opacity: 0.55; }

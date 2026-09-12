@@ -8,6 +8,7 @@
    ========================================================================== */
 
 import { loadMaps, loadRankedPool, preload, offlineNote } from './api.js';
+import { setMap as setSessionMap, getMap as getSessionMap } from './session.js';
 import { pickOne, pickOther } from './random.js';
 
 const STORAGE_KEY = 'vr.bannedMaps.v1';
@@ -29,6 +30,7 @@ const state = {
   maps: [],
   banned: new Set(),
   ranked: null,    // { ids:Set, label } once the rotation file resolves
+  lockedId: null,  // the map committed to the game log, if any
   current: null,
   stage: 'ban',    // ban | roll
   phase: 'idle',   // idle | spinning | landed
@@ -60,25 +62,75 @@ const activeMaps = () => state.maps.filter((m) => !state.banned.has(m.id));
 const canRoll = () => activeMaps().length >= 2;
 
 /**
- * True when the bans are exactly "everything outside the competitive rotation" —
- * i.e. the board is showing the ranked pool and nothing else. Any extra ban or
- * any pool map left banned drops it back to false.
+ * Which of the three pool states the board is in right now.
+ *
+ *   'ranked'     the bans are exactly "everything outside the rotation"
+ *   'nonranked'  the bans are exactly the rotation
+ *   'off'        anything else
+ *
+ * Derived from the ban set on every sync rather than remembered, so banning a
+ * map by hand drops the control into the matching state for free — there is no
+ * second source of truth that can disagree with the board.
  */
-function isRankedSelection() {
-  if (!state.ranked) return false;
-  return state.maps.every((m) => state.banned.has(m.id) !== state.ranked.ids.has(m.id));
+function poolMode() {
+  if (!state.ranked) return 'off';
+  const inPool = (m) => state.ranked.ids.has(m.id);
+  const banned = (m) => state.banned.has(m.id);
+  if (state.maps.every((m) => banned(m) !== inPool(m))) return 'ranked';
+  if (state.maps.every((m) => banned(m) === inPool(m))) return 'nonranked';
+  return 'off';
 }
 
 const isRanked = (map) => Boolean(map && state.ranked && state.ranked.ids.has(map.id));
 
-/** Ban every map that isn't in the competitive rotation. */
-function banToRankedPool() {
+/** Ban everything outside the rotation ('ranked'), or the rotation itself
+ *  ('nonranked'). One assignment, so the two halves can never drift apart. */
+function applyPool(keep) {
   if (!state.ranked) return;
-  state.banned = new Set(
-    state.maps.filter((m) => !state.ranked.ids.has(m.id)).map((m) => m.id)
-  );
+  const shouldBan = (m) =>
+    keep === 'ranked' ? !state.ranked.ids.has(m.id) : state.ranked.ids.has(m.id);
+  state.banned = new Set(state.maps.filter(shouldBan).map((m) => m.id));
   saveBans();
   afterPoolChange();
+}
+
+/**
+ * Off → Ranked, Ranked → Non-Ranked, Non-Ranked → Ranked.
+ *
+ * The one guard: if the rotation happens to cover all but one map, flipping to
+ * Non-Ranked would leave too few to draw from, so that step is skipped and the
+ * control simply stays on Ranked rather than offering a dead board.
+ */
+function cyclePool() {
+  if (!state.ranked) return;
+  const canInvert = state.ranked.outside >= 2;
+  applyPool(poolMode() === 'ranked' && canInvert ? 'nonranked' : 'ranked');
+}
+
+/** Wording for each state — one place, so the button, its tooltip, its screen
+ *  reader label and the randomizer's twin never contradict each other. */
+function poolCopy(mode) {
+  if (!state.ranked) return { title: '', aria: 'Ranked pool', badge: '' };
+  const where = state.ranked.label ? ` (${state.ranked.label})` : '';
+  if (mode === 'ranked') {
+    return {
+      title: `Active pool is the competitive rotation${where} — click to flip to everything outside it`,
+      aria: 'Pool is the competitive rotation. Activate to switch to the maps outside it.',
+      badge: `The ${state.ranked.count} maps in the competitive rotation${where}`,
+    };
+  }
+  if (mode === 'nonranked') {
+    return {
+      title: `Active pool is everything outside the competitive rotation${where} — click to flip back`,
+      aria: 'Pool is the maps outside the competitive rotation. Activate to switch back to the rotation.',
+      badge: `The ${state.ranked.outside} maps outside the competitive rotation${where}`,
+    };
+  }
+  return {
+    title: `Ban everything outside the competitive rotation${where}`,
+    aria: 'Restrict the pool to the competitive rotation.',
+    badge: '',
+  };
 }
 
 /* ----------------------------------------------------------------- view -- */
@@ -241,7 +293,24 @@ function land(winner) {
   el.editBans.disabled = false;
   el.spinText.textContent = 'Reroll';
 
+  // The rolled map IS the locked map. A reroll simply replaces it, so the
+  // game log always reflects what is on screen and there is nothing to press.
+  setMapLock(winner);
+
   setTimeout(() => el.stage.classList.remove('is-landed'), 950);
+}
+
+/* ----------------------------------------------------------- map lock --- */
+
+/**
+ * The map half of a game object. There is no UI for this: a map is committed
+ * the moment it is rolled and replaced the moment it is rerolled, so what the
+ * game log holds is always what the hero is showing. session.js holds the other
+ * half and logs the game once ten agents are locked too.
+ */
+function setMapLock(map) {
+  state.lockedId = map ? map.id : null;
+  setSessionMap(map);
 }
 
 /* ------------------------------------------------------------ ban board -- */
@@ -286,6 +355,9 @@ function setAllBanned(banned) {
 
 function afterPoolChange() {
   syncBoard();
+  // The pool changed under the committed map; if it just got banned, it can no
+  // longer be the map for the next game.
+  if (state.lockedId && state.banned.has(state.lockedId)) setMapLock(null);
   const pool = activeMaps();
 
   // If the map held over from a previous session just got banned, slide off it.
@@ -323,13 +395,22 @@ function syncBoard() {
   el.selectAll.disabled = bans === 0;
   el.banAll.disabled = pool.length === 0;
 
-  // Once the board already IS the rotation the button has nothing left to do:
-  // same box, lit up, inert. Change the selection by hand and it goes back to
-  // being a button. The randomizer's twin mirrors that lit state.
-  const onRanked = isRankedSelection();
-  el.ranked.classList.toggle('is-on', onRanked);
-  el.ranked.setAttribute('aria-disabled', String(onRanked));
-  el.badgeRoll.classList.toggle('is-off', !onRanked);
+  // Three states in one box. Lit for both ranked and non-ranked, struck through
+  // for non-ranked so the inversion is readable at a glance; the label text
+  // never changes, so the control's footprint is identical in all three and
+  // nothing on the row moves. The randomizer's twin mirrors it read-only.
+  const mode = poolMode();
+  const inverse = mode === 'nonranked';
+  const copy = poolCopy(mode);
+
+  el.ranked.classList.toggle('is-on', mode !== 'off');
+  el.ranked.classList.toggle('is-inverse', inverse);
+  el.ranked.title = copy.title;
+  el.ranked.setAttribute('aria-label', copy.aria);
+
+  el.badgeRoll.classList.toggle('is-off', mode === 'off');
+  el.badgeRoll.classList.toggle('is-inverse', inverse);
+  el.badgeRoll.title = copy.badge;
 
   // Continue is only legal with at least two maps left to draw from.
   const ok = canRoll();
@@ -451,7 +532,12 @@ function resolveRanked(pool, maps) {
   }
   if (ids.size < 2 || ids.size === maps.length) return null;
 
-  return { ids, label: pool.label || '', count: ids.size };
+  return {
+    ids,
+    label: pool.label || '',
+    count: ids.size,
+    outside: maps.length - ids.size,
+  };
 }
 
 /* ----------------------------------------------------------------- boot -- */
@@ -477,12 +563,7 @@ async function load() {
     // appear or vanish mid-session and shift the row.
     el.flagBan.hidden = !state.ranked;
     el.flagRoll.hidden = !state.ranked;
-    if (state.ranked) {
-      const where = state.ranked.label ? ` (${state.ranked.label})` : '';
-      el.ranked.title = `Ban everything outside the competitive rotation${where}`;
-      el.badgeRoll.title =
-        `The ${state.ranked.count} maps in the competitive rotation${where}`;
-    }
+    // Tooltips and labels are state-dependent now; syncBoard owns them.
 
     const note = offlineNote(source);
     el.offline.textContent = note || '';
@@ -495,6 +576,23 @@ async function load() {
     el.app.hidden = false;
 
     setStatus('Standby');
+
+    // A map locked in a previous visit is still locked — restore it onto the
+    // hero so the button and the artwork agree from the first frame.
+    const held = getSessionMap();
+    const still = held && maps.find((m) => m.id === held.id && !state.banned.has(m.id));
+    if (still) {
+      state.lockedId = still.id;
+      state.phase = 'landed';
+      setFade(0);
+      showMap(still);
+      setFade(IDLE_FADE);
+      setStatus('Locked In', true);
+      el.spinText.textContent = 'Reroll';
+    } else if (held) {
+      setSessionMap(null);
+    }
+
     syncBoard();
   } catch (err) {
     console.error(err);
@@ -553,7 +651,7 @@ export default {
     el.retry.addEventListener('click', load);
     el.selectAll.addEventListener('click', () => setAllBanned(false));
     el.banAll.addEventListener('click', () => setAllBanned(true));
-    el.ranked.addEventListener('click', banToRankedPool);
+    el.ranked.addEventListener('click', cyclePool);
     el.continue.addEventListener('click', () => canRoll() && navigate('/map'));
     el.editBans.addEventListener('click', () => navigate('/map/ban'));
 

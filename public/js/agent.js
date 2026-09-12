@@ -5,9 +5,11 @@
    ========================================================================== */
 
 import { loadAgents, preload, offlineNote } from './api.js';
-import { pickOne, drawDistinct } from './random.js';
+import { pickOne, drawDistinct, balancedDraw } from './random.js';
+import { setTeam as setSessionTeam } from './session.js';
 
 const STORAGE_KEY = 'vr.agentBoard.v1';
+const PREFS_KEY   = 'vr.agentPrefs.v1';
 const TEAMS = ['a', 'b'];
 const SLOTS = 5;
 
@@ -31,6 +33,9 @@ const state = {
   phase: 'idle',   // idle | rolling
   visible: false,
   raf: null,
+  // OFF by default: both teams get the same shape of roles. Turned on, each
+  // team is drawn independently and a 4-Duelist comp is back on the table.
+  fullRandom: false,
 };
 
 function blankTeam() {
@@ -61,6 +66,43 @@ function restore() {
     });
   } catch { /* corrupt state — start clean */ }
 }
+
+function savePrefs() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ fullRandom: state.fullRandom }));
+  } catch { /* private mode — the setting just won't persist */ }
+}
+
+function restorePrefs() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PREFS_KEY) || 'null');
+    state.fullRandom = Boolean(raw?.fullRandom);
+  } catch { /* corrupt — keep the default */ }
+}
+
+/**
+ * Push this team's locked line-up to session.js, which pairs it with the locked
+ * map and logs a game once both halves are complete. A team with any open slot
+ * publishes null — half a board is not a composition.
+ */
+function publishTeam(team) {
+  const side = state.board[team];
+  const complete = side.every((s) => s.locked && s.agentId && state.byId.has(s.agentId));
+
+  setSessionTeam(team, complete ? side.map((s, i) => {
+    const agent = state.byId.get(s.agentId);
+    return {
+      slot: i,
+      player: s.name || '',
+      agentId: agent.id,
+      agentName: agent.name,
+      agentIcon: agent.icon,
+      role: agent.role,
+    };
+  }) : null);
+}
+
+const publishAll = () => TEAMS.forEach(publishTeam);
 
 /* --------------------------------------------------------------- helpers - */
 
@@ -137,6 +179,9 @@ function buildBoard() {
       node.input.addEventListener('input', () => {
         state.board[team][i].name = node.input.value;
         save();
+        // Player names ride along into the game log, so a rename on a fully
+        // locked board should reach it too.
+        publishTeam(team);
       });
 
       node.pick.addEventListener('click', (e) => {
@@ -153,6 +198,7 @@ function buildBoard() {
         save();
         renderTeam(team);
         syncControls();
+        publishTeam(team);
       });
 
       host.appendChild(row);
@@ -309,6 +355,7 @@ function choose(agentId) {
   save();
   renderTeam(team);
   syncControls();
+  publishTeam(team);
 }
 
 /** Paint one slot from a specific agent (used for both the roll and the result). */
@@ -367,6 +414,24 @@ function renderAll() {
   TEAMS.forEach(renderTeam);
 }
 
+/**
+ * Lock or unlock every slot at once. Only slots that actually have an agent can
+ * be locked, so "Lock All" on a board that has never been rolled is a no-op
+ * rather than a board full of empty locks.
+ */
+function setAllLocked(locked) {
+  if (state.phase === 'rolling') return;
+  TEAMS.forEach((team) => {
+    state.board[team].forEach((slot) => {
+      slot.locked = locked && Boolean(slot.agentId);
+    });
+  });
+  save();
+  renderAll();
+  syncControls();
+  publishAll();
+}
+
 function syncControls() {
   const open = TEAMS.reduce((n, t) => n + openSlots(t).length, 0);
   const rolling = state.phase === 'rolling';
@@ -375,6 +440,20 @@ function syncControls() {
   // There is no explanatory line under the button any more, so the reason a
   // disabled button is disabled lives in its tooltip.
   el.roll.title = open === 0 ? 'Every slot is locked — unlock one to roll again' : '';
+
+  el.fullRandom.classList.toggle('is-on', state.fullRandom);
+  el.fullRandom.setAttribute('aria-pressed', String(state.fullRandom));
+  el.fullRandom.disabled = rolling;
+
+  const withAgents = TEAMS.reduce(
+    (n, t) => n + state.board[t].filter((s) => s.agentId).length, 0);
+  const locked = TEAMS.reduce(
+    (n, t) => n + state.board[t].filter((s) => s.locked).length, 0);
+  el.lockAll.disabled = rolling || withAgents === 0 || locked === withAgents;
+  el.unlockAll.disabled = rolling || locked === 0;
+  el.fullRandom.title = state.fullRandom
+    ? 'Full random: each team is drawn independently — one side can end up with four Duelists. Click for balanced comps.'
+    : 'Balanced: both teams get the same mix of roles. Click for a completely free draw.';
 
   TEAMS.forEach((t) =>
     state.nodes[t].forEach((n, i) => {
@@ -396,30 +475,63 @@ function buildSchedule() {
   return times;
 }
 
+/**
+ * The line-up for this roll: team → [{ slotIndex, agent }].
+ *
+ * Balanced by default — both teams receive the same multiset of roles, with
+ * already-locked agents counted into that shape. If the locks make symmetry
+ * impossible, or the roster is too thin to support a shape both sides can fill,
+ * this falls back to the independent draw rather than refusing to roll; the
+ * console says which happened.
+ *
+ * Note that an agent may legitimately appear on BOTH teams — Valorant enforces
+ * uniqueness within a team, not across the lobby — so each team is only ever
+ * filtered against its own locks.
+ */
+function buildPlan() {
+  const open = Object.fromEntries(TEAMS.map((t) => [t, openSlots(t)]));
+  if (!TEAMS.some((t) => open[t].length)) return null;
+
+  if (!state.fullRandom) {
+    const teams = Object.fromEntries(TEAMS.map((t) => [t, {
+      locked: state.board[t]
+        .filter((s) => s.locked && s.agentId)
+        .map((s) => state.byId.get(s.agentId))
+        .filter(Boolean),
+    }]));
+
+    const balanced = balancedDraw({ pool: state.agents, teams, size: SLOTS });
+    if (balanced) {
+      return Object.fromEntries(TEAMS.map((t) =>
+        [t, open[t].map((i, k) => ({ i, agent: balanced.picks[t][k] }))]));
+    }
+    console.warn('[agent] balanced composition not possible here — rolling freely');
+  }
+
+  const plan = {};
+  for (const team of TEAMS) {
+    if (!open[team].length) { plan[team] = []; continue; }
+    const taken = lockedIds(team);
+    const draw = drawDistinct(state.agents.filter((a) => !taken.has(a.id)), open[team].length);
+    if (!draw) {
+      // Cannot happen with a full roster (25+ agents, 5 per board) but a
+      // shrunken roster should fail loudly in the console, not silently.
+      console.warn('[agent] not enough agents left to fill a board');
+      return null;
+    }
+    plan[team] = open[team].map((i, k) => ({ i, agent: draw[k] }));
+  }
+  return plan;
+}
+
 function roll() {
   if (state.phase === 'rolling') return;
 
-  // Work out the final line-up up front: per team, draw distinct agents from
-  // everything that isn't already locked on that team.
-  const plan = {};
-  let anyOpen = false;
-
-  for (const team of TEAMS) {
-    const open = openSlots(team);
-    if (!open.length) { plan[team] = []; continue; }
-    anyOpen = true;
-
-    const taken = lockedIds(team);
-    const draw = drawDistinct(state.agents.filter((a) => !taken.has(a.id)), open.length);
-    if (!draw) {
-      // Cannot happen with a full roster (25 agents, 5 per board) but a
-      // shrunken roster should fail loudly in the console, not silently.
-      console.warn('[agent] not enough agents left to fill a board');
-      return;
-    }
-    plan[team] = open.map((i, k) => ({ i, agent: draw[k] }));
-  }
-  if (!anyOpen) return;
+  // Work out the final line-up up front — the shuffle is then pure theatre over
+  // a result that is already decided, which is what lets every slot stop on the
+  // same frame.
+  const plan = buildPlan();
+  if (!plan) return;
 
   closePicker();
   state.phase = 'rolling';
@@ -482,6 +594,7 @@ function finish(plan, rolling) {
   renderAll();
   el.rollText.textContent = 'Reroll';
   syncControls();
+  publishAll();
 
   setTimeout(() => rolling.forEach(({ team, i }) =>
     state.nodes[team][i].row.classList.remove('is-revealed')), 700);
@@ -525,6 +638,7 @@ async function load() {
     renderAll();
     setFade(REST_FADE);
     syncControls();
+    publishAll();
     if (TEAMS.some((t) => state.board[t].some((s) => s.agentId))) {
       el.rollText.textContent = 'Reroll';
     }
@@ -550,6 +664,9 @@ export default {
       count:    $('#countAgents', root),
       roll:     $('#rollBtn', root),
       rollText: $('#rollBtnText', root),
+      fullRandom: $('#fullRandom', root),
+      lockAll:    $('#lockAll', root),
+      unlockAll:  $('#unlockAll', root),
       teams:    { a: $('#teamA', root), b: $('#teamB', root) },
       // The picker popover is a sibling of the views, not part of this one.
       panel:     document.getElementById('agentPanel'),
@@ -561,6 +678,29 @@ export default {
 
     el.roll.addEventListener('click', roll);
     el.retry.addEventListener('click', load);
+
+    el.fullRandom.addEventListener('click', () => {
+      state.fullRandom = !state.fullRandom;
+      savePrefs();
+      syncControls();
+    });
+
+    el.lockAll.addEventListener('click', () => setAllLocked(true));
+    el.unlockAll.addEventListener('click', () => setAllLocked(false));
+
+    // The game is logged; the board has done its job. Release every slot so the
+    // next custom game can be rolled without clearing anything by hand. This
+    // does not publish — session.js has already cleared its own copy, and
+    // republishing null boards from here would just be noise.
+    window.addEventListener('vr:gamecreated', () => {
+      if (!TEAMS.some((t) => state.board[t].some((slot) => slot.locked))) return;
+      TEAMS.forEach((t) => state.board[t].forEach((slot) => { slot.locked = false; }));
+      save();
+      renderAll();
+      syncControls();
+    });
+
+    restorePrefs();
 
     el.close.addEventListener('click', closePicker);
     el.search.addEventListener('input', () => filterPicker(el.search.value));

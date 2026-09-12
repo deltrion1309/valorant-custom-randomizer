@@ -164,6 +164,48 @@ function pickAccent(colors) {
   return `#${String(hex).slice(0, 6)}`;
 }
 
+/**
+ * Official rank badge art, keyed by tier id.
+ *
+ * Riot's competitive tiers are versioned by episode and `/v1/competitivetiers`
+ * returns every episode ever shipped. The last entry is the current one — the
+ * early episodes have null icons on the unused tiers, so taking the newest
+ * rather than the first matters.
+ *
+ * Same API as the maps and agents, so the footer's attribution already covers
+ * it. Returns an empty Map rather than throwing: a missing badge should cost a
+ * small icon, not the whole results table.
+ */
+export async function loadRankTiers() {
+  const out = new Map();
+  try {
+    const res = await fetch(`${API}/competitivetiers`, { cache: 'force-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    const episodes = Array.isArray(json?.data) ? json.data : [];
+    const current = episodes[episodes.length - 1];
+    (current?.tiers || []).forEach((t) => {
+      if (!Number.isFinite(t?.tier)) return;
+      out.set(t.tier, {
+        name: titleCase(t.tierName || ''),
+        // The division is the family — Iron, Bronze, … — that the three
+        // numbered tiers hang under, and what the picker groups by.
+        division: titleCase(t.divisionName || t.tierName || ''),
+        icon: t.largeIcon || t.smallIcon || null,
+        color: t.color ? `#${String(t.color).slice(0, 6)}` : null,
+      });
+    });
+  } catch (err) {
+    console.warn('[api] rank tiers unavailable:', err.message);
+  }
+  return out;
+}
+
+/** Riot ships tier names shouting ("GOLD 2"); the table reads better calmed. */
+function titleCase(s) {
+  return s.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
+}
+
 /** Human-readable banner for a non-live data source (null when live). */
 export function offlineNote(source) {
   if (source === 'cache') return 'Offline — using the roster cached on your last visit';

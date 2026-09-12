@@ -14,7 +14,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  randomInt, pickOne, pickOther, shuffle, drawDistinct, seededRng,
+  randomInt, pickOne, pickOther, shuffle, drawDistinct, balancedDraw, seededRng,
 } from '../public/js/random.js';
 
 /* --------------------------------------------------------------- helpers - */
@@ -278,4 +278,121 @@ test('Math.random itself passes the same uniformity bar (smoke test)', () => {
   const counts = new Array(20).fill(0);
   for (let i = 0; i < 200000; i += 1) counts[randomInt(20)] += 1;
   assertUniform(counts, 'randomInt on the default Math.random');
+});
+
+
+/* ------------------------------------------- balanced team composition ---- */
+
+const ROLES = ['Duelist', 'Initiator', 'Controller', 'Sentinel'];
+
+/** A roster shaped like Riot's: more Duelists than anything else. */
+function roster(counts = [8, 7, 5, 6]) {
+  const out = [];
+  ROLES.forEach((role, r) => {
+    for (let i = 0; i < counts[r]; i += 1) out.push({ id: `${role}-${i}`, name: `${role} ${i}`, role });
+  });
+  return out;
+}
+
+const shapeOf = (agents) => agents.map((a) => a.role).sort().join('|');
+const bare = () => ({ a: { locked: [] }, b: { locked: [] } });
+
+test('balanced draw gives both teams the same role composition', () => {
+  const pool = roster();
+  const rng = seededRng(7);
+  for (let i = 0; i < 3000; i += 1) {
+    const res = balancedDraw({ pool, teams: bare(), size: 5, rng });
+    assert.ok(res, 'a full roster must always produce a balanced draw');
+    assert.equal(res.picks.a.length, 5);
+    assert.equal(res.picks.b.length, 5);
+    assert.equal(shapeOf(res.picks.a), shapeOf(res.picks.b), 'teams differ in role shape');
+  }
+});
+
+test('balanced draw never repeats an agent within a team', () => {
+  const pool = roster();
+  const rng = seededRng(11);
+  for (let i = 0; i < 2000; i += 1) {
+    const res = balancedDraw({ pool, teams: bare(), size: 5, rng });
+    for (const team of ['a', 'b']) {
+      assert.equal(new Set(res.picks[team].map((a) => a.id)).size, 5, `duplicate on team ${team}`);
+    }
+  }
+});
+
+test('locked agents are counted into the shape, not ignored by it', () => {
+  const pool = roster();
+  const rng = seededRng(23);
+  const aLock = pool.find((x) => x.role === 'Sentinel');
+  const bLock = pool.find((x) => x.role === 'Duelist');
+
+  for (let i = 0; i < 2000; i += 1) {
+    const teams = { a: { locked: [aLock] }, b: { locked: [bLock] } };
+    const res = balancedDraw({ pool, teams, size: 5, rng });
+    assert.ok(res);
+    assert.equal(res.picks.a.length, 4, 'should only fill the four open slots');
+    assert.equal(
+      shapeOf([aLock, ...res.picks.a]),
+      shapeOf([bLock, ...res.picks.b]),
+      'final compositions differ once locks are counted'
+    );
+    // A locked agent must never be drawn a second time on its own team.
+    assert.ok(!res.picks.a.some((x) => x.id === aLock.id));
+    assert.ok(!res.picks.b.some((x) => x.id === bLock.id));
+  }
+});
+
+test('the same agent may appear on both teams — customs allow it', () => {
+  const pool = roster();
+  const rng = seededRng(31);
+  let shared = 0;
+  for (let i = 0; i < 500; i += 1) {
+    const res = balancedDraw({ pool, teams: bare(), size: 5, rng });
+    const a = new Set(res.picks.a.map((x) => x.id));
+    if (res.picks.b.some((x) => a.has(x.id))) shared += 1;
+  }
+  assert.ok(shared > 0, 'cross-team overlap should be possible, not engineered away');
+});
+
+test('the drawn shape follows the roster, not a flat role distribution', () => {
+  // Duelists are the biggest role here by a wide margin, so they should show up
+  // in the shape more often than Controllers. A flat-per-role draw would not.
+  const pool = roster([12, 6, 3, 6]);
+  const rng = seededRng(101);
+  const seen = Object.fromEntries(ROLES.map((r) => [r, 0]));
+  for (let i = 0; i < 4000; i += 1) {
+    balancedDraw({ pool, teams: bare(), size: 5, rng }).shape.forEach((r) => { seen[r] += 1; });
+  }
+  assert.ok(seen.Duelist > seen.Controller * 2, `expected Duelist-heavy shapes, got ${JSON.stringify(seen)}`);
+});
+
+test('balanced draw bails out instead of guessing when symmetry is impossible', () => {
+  const pool = roster();
+  // Five locks on one side, none on the other, all Duelists: the other team
+  // would need five Duelists too — fine — but six locks is over the board size.
+  assert.equal(balancedDraw({ pool, teams: { a: { locked: pool.slice(0, 6) }, b: { locked: [] } }, size: 5 }), null);
+  // A roster of two agents cannot fill five slots.
+  assert.equal(balancedDraw({ pool: pool.slice(0, 2), teams: bare(), size: 5 }), null);
+  // Four agents cannot fill five distinct slots, however the roles fall.
+  assert.equal(balancedDraw({ pool: pool.slice(0, 4), teams: bare(), size: 5 }), null);
+});
+
+test('one team locking a whole role is still satisfiable — customs allow overlap', () => {
+  // Every Sentinel locked on A. B can still be dealt the same Sentinels, so
+  // this must succeed rather than fall back: it is the case most likely to be
+  // mistaken for an impossible one.
+  const pool = roster([8, 7, 5, 3]);
+  const sentinels = pool.filter((a) => a.role === 'Sentinel');
+  const res = balancedDraw({
+    pool,
+    teams: { a: { locked: sentinels }, b: { locked: [] } },
+    size: 5,
+    rng: seededRng(5),
+  });
+  assert.ok(res, 'should not bail out here');
+  assert.equal(
+    shapeOf([...sentinels, ...res.picks.a]),
+    shapeOf(res.picks.b),
+    'compositions must still match'
+  );
 });

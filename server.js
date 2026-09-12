@@ -9,11 +9,20 @@
  *   /map/ban   -> the shell (ban stage)
  *   /map       -> the shell (randomizer stage)
  *   /agent     -> the shell (agent select)
+ *   /api/match -> the match-lookup proxy, same code Vercel runs
  *   /*         -> files under public/
+ *
+ * The proxy needs a key. PowerShell, in this folder, before starting:
+ *   $env:HENRIK_API_KEY = "HDEV-..."
+ *   node server.js
+ * Without it the endpoint reports itself unconfigured and the UI falls back to
+ * manual entry, which is exactly what a deploy with no key set would do.
  */
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+
+import { lookup } from './api/match.js';
 
 const PORT = Number(process.argv[2] || process.env.PORT || 3000);
 const ROOT = path.join(import.meta.dirname, 'public');
@@ -29,11 +38,49 @@ const MIME = {
   '.webp': 'image/webp',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
 };
 
 // Every app route serves the same shell; /js/app.js decides what to show.
-const APP_ROUTES = new Set(['/map', '/map/ban', '/maps', '/agent', '/agents']);
+const APP_ROUTES = new Set([
+  '/map', '/map/ban', '/maps', '/agent', '/agents',
+  '/career', '/imprint', '/privacy',
+]);
 const SHELL = '/index.html';
+
+async function handleMatch(req, res) {
+  if (req.method !== 'POST') {
+    res.writeHead(405, { Allow: 'POST', 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, code: 'method', reason: 'POST only.' }));
+    return;
+  }
+
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > 16_384) {                 // nothing legitimate is this big
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, code: 'too_large', reason: 'Request too large.' }));
+      return;
+    }
+    chunks.push(chunk);
+  }
+
+  let body = {};
+  try {
+    body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, code: 'bad_json', reason: 'Body must be JSON.' }));
+    return;
+  }
+
+  const { status, body: out } = await lookup(body);
+  res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+  res.end(JSON.stringify(out));
+}
 
 const server = http.createServer((req, res) => {
   let pathname;
@@ -46,6 +93,13 @@ const server = http.createServer((req, res) => {
 
   if (pathname === '/') {
     res.writeHead(302, { Location: '/map/ban' }).end();
+    return;
+  }
+
+  // The one dynamic route. Kept byte-identical to the deployed function by
+  // importing it, so local dev cannot quietly diverge from production.
+  if (pathname === '/api/match') {
+    handleMatch(req, res);
     return;
   }
 

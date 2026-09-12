@@ -2,3 +2,9 @@ node_modules/
 .vercel/
 .DS_Store
 *.log
+
+# Never commit the API key. It belongs in Vercel's environment variables and,
+# locally, in the shell that starts the server.
+.env
+.env.local
+.env.*.local

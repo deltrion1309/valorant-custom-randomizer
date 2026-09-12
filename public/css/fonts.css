@@ -1,0 +1,70 @@
+/* ==========================================================================
+   Self-hosted webfonts.
+
+   These used to come from fonts.googleapis.com. Loading them from Google means
+   every visitor's IP address is sent to a US server before the page has even
+   rendered — which German courts have treated as an unconsented transfer of
+   personal data under the GDPR, and which kicked off a wave of warning letters.
+   Serving the files from our own origin removes the transfer entirely, and is
+   faster besides: no extra DNS lookup, no extra TLS handshake, no render-block
+   on a third-party stylesheet.
+
+   All three families are licensed under the SIL Open Font License 1.1, which
+   permits redistribution. See /fonts/OFL.txt for the notices.
+
+   Only the `latin` subset ships — it covers the German umlauts and ß that the
+   Impressum and privacy pages need. Only the weights actually used are here;
+   adding a weight means adding a file, not just a number.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Bebas Neue';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/bebas-neue-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Oswald';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/oswald-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Oswald';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/oswald-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Oswald';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/oswald-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/barlow-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/barlow-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/barlow-latin-700-normal.woff2') format('woff2');
+}
